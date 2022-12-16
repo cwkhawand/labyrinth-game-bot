@@ -1,0 +1,4 @@
+#ifndef PROJECT_LABYRINTH_H
+#define PROJECT_LABYRINTH_H
+
+#endif
