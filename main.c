@@ -52,6 +52,8 @@ int main() {
                 break;
             }
         }
+
+        myTurn = !myTurn;
     }
 
     closeConnection();
