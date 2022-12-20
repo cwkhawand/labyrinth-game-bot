@@ -6,15 +6,19 @@
 int main() {
     t_labyrinth labyrinth;
 
+    // Connect to server and obtain game information
     connectToServer("172.105.76.204", 1234, "DataCell");
     waitForLabyrinth("TRAINING DONTMOVE timeout=1000 display=debug", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
 
     labyrinth.area = labyrinth.sizeX*labyrinth.sizeY;
 
+    // allocation enough space for the raw labyrinth
     int* temp_labyrinth = malloc(labyrinth.area*5*sizeof(int));
 
+    // obtain labyrinth information
     int myTurn = !getLabyrinth(temp_labyrinth, &labyrinth.extraTile.North, &labyrinth.extraTile.East, &labyrinth.extraTile.South, &labyrinth.extraTile.West, &labyrinth.extraTile.Item);
 
+    // initiate labyrinth values
     initLabyrinth(&labyrinth, temp_labyrinth, myTurn);
 
     printf("Width: %d   |   Height: %d  |   Name: %s\n\n", labyrinth.sizeX, labyrinth.sizeY, labyrinth.name);
@@ -61,6 +65,7 @@ int main() {
         myTurn = !myTurn;
     }
 
+    // Close the connection to the server
     closeConnection();
 
     if (iWon) {

@@ -3,6 +3,13 @@
 #include "Labyrinth.h"
 #include "../lib/Labyrinthe/labyrinthAPI.h"
 
+/* Function: printRawLabyrinthDebug
+ * Prints the raw labyrinth received from the server.
+ * Arguments:
+ * - labyrinth: the labyrinth to show
+ * - sizeX: the width of the labyrinth
+ * - sizeY: the height of the labyrinth
+ */
 void printRawLabyrinthDebug(int* labyrinth, int sizeX, int sizeY) {
     for (int i = 0; i < sizeX*sizeY*5; i++) {
         printf("%d", labyrinth[i]);
@@ -19,6 +26,11 @@ void printRawLabyrinthDebug(int* labyrinth, int sizeX, int sizeY) {
     }
 }
 
+/* Function: printRawLabyrinthDebug
+ * Prints the parsed labyrinth.
+ * Arguments:
+ * - labyrinth: the labyrinth to show
+ */
 void printLabyrinthDebug(t_labyrinth labyrinth) {
     for (int i = 0; i < labyrinth.sizeY; i++) {
         for (int j = 0; j < labyrinth.sizeX; j++) {
@@ -34,6 +46,13 @@ void printLabyrinthDebug(t_labyrinth labyrinth) {
     }
 }
 
+/* Function: printRawLabyrinthDebug
+ * Initiates the labyrinth structure
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ * - temp_labyrinth: the labyrinth raw data received from the server
+ * - myTurn: whether it is our turn or the opponent's turn
+ */
 void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
     labyrinth->me.x = (myTurn) ? 0 : labyrinth->sizeX-1;
     labyrinth->me.y = (myTurn) ? 0 : labyrinth->sizeY-1;
