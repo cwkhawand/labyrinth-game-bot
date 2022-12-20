@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Labyrinth.h"
-#include "../lib/Labyrinthe/labyrinthAPI.h"
 
 /* Function: printRawLabyrinthDebug
  * Prints the raw labyrinth received from the server.
@@ -71,4 +70,55 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
             labyrinth->tiles[i*labyrinth->sizeX + j].Item = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 4];
         }
     }
+}
+
+/* Function: updateLabyrinth
+ * Updates the labyrinth structure
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ * - myTurn: whether it was our turn or the opponent's turn
+ * - move: the move which was done
+ */
+void updateLabyrinth(t_labyrinth* labyrinth, int myTurn, t_move move) {
+    // Update our or the opponent's position and item
+    if (myTurn) {
+        labyrinth->me.x = move.x;
+        labyrinth->me.y = move.y;
+        labyrinth->me.item = move.nextItem;
+    } else {
+        labyrinth->opponent.x = move.x;
+        labyrinth->opponent.y = move.y;
+        labyrinth->opponent.item = move.nextItem;
+    }
+
+    // move lines/columns according to the inserted tile
+    if (move.insert == INSERT_LINE_LEFT) {
+        for (int i = labyrinth->sizeX-2; i >= 0; i--) {
+            labyrinth->tiles[move.number*labyrinth->sizeX + i+1] = labyrinth->tiles[move.number*labyrinth->sizeX + i];
+        }
+        labyrinth->tiles[move.number*labyrinth->sizeX] = labyrinth->extraTile;
+
+    } else if (move.insert == INSERT_LINE_RIGHT) {
+        for (int i = 1; i < labyrinth->sizeX; i++) {
+            labyrinth->tiles[move.number*labyrinth->sizeX + i-1] = labyrinth->tiles[move.number*labyrinth->sizeX + i];
+        }
+        labyrinth->tiles[move.number*labyrinth->sizeX + labyrinth->sizeX - 1] = labyrinth->extraTile;
+    } else if (move.insert == INSERT_COLUMN_TOP) {
+        for (int i = labyrinth->sizeY-2; i >= 0; i--) {
+            labyrinth->tiles[(i+1)*labyrinth->sizeX + move.number] = labyrinth->tiles[i*labyrinth->sizeX + move.number];
+        }
+        labyrinth->tiles[move.number] = labyrinth->extraTile;
+    } else if (move.insert == INSERT_COLUMN_BOTTOM) {
+        for (int i = 1; i < labyrinth->sizeY; i++) {
+            labyrinth->tiles[(i-1)*labyrinth->sizeX + move.number] = labyrinth->tiles[i*labyrinth->sizeX + move.number];
+        }
+        labyrinth->tiles[(labyrinth->sizeY-1)*labyrinth->sizeX + move.number] = labyrinth->extraTile;
+    }
+
+    // Update the extra tile
+    labyrinth->extraTile.North = move.tileN;
+    labyrinth->extraTile.East = move.tileE;
+    labyrinth->extraTile.South = move.tileS;
+    labyrinth->extraTile.West = move.tileW;
+    labyrinth->extraTile.Item = move.tileItem;
 }

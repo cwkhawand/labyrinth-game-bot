@@ -8,7 +8,7 @@ int main() {
 
     // Connect to server and obtain game information
     connectToServer("172.105.76.204", 1234, "DataCell");
-    waitForLabyrinth("TRAINING DONTMOVE timeout=1000 display=debug", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
+    waitForLabyrinth("TRAINING DONTMOVE timeout=1000 start=0 seed=0x02a1da display=debug", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
 
     labyrinth.area = labyrinth.sizeX*labyrinth.sizeY;
 
@@ -28,20 +28,22 @@ int main() {
 //    printLabyrinthDebug(labyrinth);
 //    printf("\n\n");
 
-    t_move myMove;
-    t_move opponentMove;
+    t_move move;
 
     int iWon;
     while (1) {
         printLabyrinth();
+        printf("========================\n");
+        printLabyrinthDebug(labyrinth);
+        printf("========================\n");
         if (myTurn) {
             printf("Please insert the move type, line/column number, rotation and coordinates: ");
 
             int insert;
-            scanf(" %d %d %d %d %d", &insert, &myMove.number, &myMove.rotation, &myMove.x, &myMove.y);
-            myMove.insert = (t_insertion) insert;
+            scanf(" %d %d %d %d %d", &insert, &move.number, &move.rotation, &move.x, &move.y);
+            move.insert = (t_insertion) insert;
 
-            int moveCode = sendMove(&myMove);
+            int moveCode = sendMove(&move);
 
             if (moveCode != NORMAL_MOVE) {
                 if (moveCode == WINNING_MOVE) iWon = 1;
@@ -51,16 +53,18 @@ int main() {
 
 
         } else {
-            int moveCode = getMove(&opponentMove);
+            int moveCode = getMove(&move);
             if (moveCode != NORMAL_MOVE) {
                 if (moveCode == WINNING_MOVE) iWon = 0;
                 else iWon = 1;
                 break;
             }
 
-            labyrinth.opponent.x = opponentMove.x;
-            labyrinth.opponent.y = opponentMove.y;
+            labyrinth.opponent.x = move.x;
+            labyrinth.opponent.y = move.y;
         }
+
+        updateLabyrinth(&labyrinth, myTurn, move);
 
         myTurn = !myTurn;
     }

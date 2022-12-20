@@ -1,10 +1,12 @@
 #ifndef PROJECT_LABYRINTH_H
 #define PROJECT_LABYRINTH_H
+#include "../lib/Labyrinthe/labyrinthAPI.h"
 
-typedef struct pos {
+typedef struct player {
     int x;
     int y;
-} t_pos;
+    int item;
+} t_player;
 
 typedef struct tile {
     int North;
@@ -21,8 +23,8 @@ typedef struct labyrinth {
     int area;
     t_tile* tiles;
     t_tile extraTile;
-    t_pos me;
-    t_pos opponent;
+    t_player me;
+    t_player opponent;
 } t_labyrinth;
 
 /* Function: printRawLabyrinthDebug
@@ -49,5 +51,14 @@ void printLabyrinthDebug(t_labyrinth labyrinth);
  * - myTurn: whether it is our turn or the opponent's turn
  */
 void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn);
+
+/* Function: updateLabyrinth
+ * Updates the labyrinth structure
+ * Arguments:
+ * - myTurn: whether it was our turn or the opponent's turn
+ * - labyrinth: a pointer to the labyrinth structure
+ * - move: the move which was done
+ */
+void updateLabyrinth(t_labyrinth* labyrinth, int myTurn, t_move move);
 
 #endif
