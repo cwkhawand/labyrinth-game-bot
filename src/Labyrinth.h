@@ -25,6 +25,10 @@ typedef struct labyrinth {
     t_tile extraTile;
     t_player me;
     t_player opponent;
+    struct forbiddenMove {
+        t_insertion insert;
+        int number;
+    } forbiddenMove;
 } t_labyrinth;
 
 /* Function: printRawLabyrinthDebug
@@ -60,5 +64,13 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn);
  * - move: the move which was done
  */
 void updateLabyrinth(t_labyrinth* labyrinth, int myTurn, t_move move);
+
+/* Function: isForbiddenMove
+ * Returns 1 if a move is forbidden, 0 otherwise
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ * - move: the move which will be done
+ */
+int isForbiddenMove(t_labyrinth labyrinth, t_move move);
 
 #endif

@@ -60,6 +60,10 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
     labyrinth->opponent.x = (myTurn) ? labyrinth->sizeX-1 : 0;
     labyrinth->opponent.y = (myTurn) ? labyrinth->sizeY-1 : 0;
 
+    // set forbidden move to not existant
+    labyrinth->forbiddenMove.insert = -1;
+    labyrinth->forbiddenMove.number = 0;
+
     // allocate a 2 dimensional array for our labyrinth
     labyrinth->tiles = (t_tile**)malloc(labyrinth->sizeY*sizeof(t_tile*));
     for (int i = 0; i < labyrinth->sizeY; i++) {
@@ -96,6 +100,18 @@ void updateLabyrinth(t_labyrinth* labyrinth, int myTurn, t_move move) {
         labyrinth->opponent.item = move.nextItem;
     }
 
+    // Update the forbidden move
+    if (move.insert == 0) {
+        labyrinth->forbiddenMove.insert = 1;
+    } else if (move.insert == 1) {
+        labyrinth->forbiddenMove.insert = 0;
+    } else if (move.insert == 2) {
+        labyrinth->forbiddenMove.insert = 3;
+    } else if (move.insert == 3) {
+        labyrinth->forbiddenMove.insert = 2;
+    }
+    labyrinth->forbiddenMove.number = move.number;
+
     // move lines/columns according to the inserted tile
     if (move.insert == INSERT_LINE_LEFT) {
         for (int i = labyrinth->sizeX-2; i >= 0; i--) {
@@ -126,4 +142,17 @@ void updateLabyrinth(t_labyrinth* labyrinth, int myTurn, t_move move) {
     labyrinth->extraTile.South = move.tileS;
     labyrinth->extraTile.West = move.tileW;
     labyrinth->extraTile.Item = move.tileItem;
+}
+
+/* Function: isForbiddenMove
+ * Returns 1 if a move is forbidden, 0 otherwise
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ * - move: the move which will be done
+ */
+int isForbiddenMove(t_labyrinth labyrinth, t_move move) {
+    if (labyrinth.forbiddenMove.insert == move.insert && labyrinth.forbiddenMove.number == move.number)
+        return 1;
+
+    return 0;
 }

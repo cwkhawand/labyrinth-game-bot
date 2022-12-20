@@ -8,7 +8,7 @@ int main() {
 
     // Connect to server and obtain game information
     connectToServer("172.105.76.204", 1234, "DataCell");
-    waitForLabyrinth("TRAINING DONTMOVE timeout=1000 start=0 seed=0x02a1da display=debug", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
+    waitForLabyrinth("TRAINING DONTMOVE timeout=1000 start=0 seed=0x02a1da", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
 
     labyrinth.area = labyrinth.sizeX*labyrinth.sizeY;
 
@@ -23,25 +23,28 @@ int main() {
 
     printf("Width: %d   |   Height: %d  |   Name: %s\n\n", labyrinth.sizeX, labyrinth.sizeY, labyrinth.name);
 
-//    printRawLabyrinthDebug(temp_labyrinth, labyrinth.sizeX, labyrinth.sizeY);
-//    printf("\n");
-//    printLabyrinthDebug(labyrinth);
-//    printf("\n\n");
-
     t_move move;
 
     int iWon;
     while (1) {
         printLabyrinth();
-        printf("========================\n");
-        printLabyrinthDebug(labyrinth);
-        printf("========================\n");
-        if (myTurn) {
-            printf("Please insert the move type, line/column number, rotation and coordinates: ");
 
+//        printLabyrinthDebug(labyrinth);
+
+        if (myTurn) {
             int insert;
-            scanf(" %d %d %d %d %d", &insert, &move.number, &move.rotation, &move.x, &move.y);
-            move.insert = (t_insertion) insert;
+            do {
+                printf("Please insert the move type, line/column number, rotation and coordinates: ");
+                scanf(" %d %d %d %d %d", &insert, &move.number, &move.rotation, &move.x, &move.y);
+                move.insert = (t_insertion) insert;
+
+                if (move.number % 2 != 1)
+                    printf("The line/column number must be an odd number!\n");
+
+                if (isForbiddenMove(labyrinth, move))
+                    printf("This move is forbidden! Please try another one.\n");
+
+            } while(move.number%2 != 1 || isForbiddenMove(labyrinth, move));
 
             int moveCode = sendMove(&move);
 
