@@ -1,42 +1,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "lib/Labyrinthe/labyrinthAPI.h"
-
-typedef struct game {
-    char name[50];
-    int sizeX;
-    int sizeY;
-} t_game;
-
-typedef struct tile {
-    int North;
-    int East;
-    int South;
-    int West;
-    int Item;
-} t_tile;
+#include "src/Labyrinth.h"
 
 int main() {
-    printf("Connecting to server...\n");
+    t_labyrinth labyrinth;
+
     connectToServer("172.105.76.204", 1234, "DataCell");
-    printf("Connected to server, obtaining labyrinth...\n");
+    waitForLabyrinth("TRAINING DONTMOVE timeout=1000 display=debug", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
 
-    t_game game;
-    waitForLabyrinth("TRAINING DONTMOVE timeout=1000", game.name, &game.sizeX, &game.sizeY);
+    labyrinth.area = labyrinth.sizeX*labyrinth.sizeY;
 
-    int* labyrinth = malloc(game.sizeX*game.sizeY*5*sizeof(int));
-    t_tile externalTile;
-    int myTurn = !getLabyrinth(labyrinth, &externalTile.North, &externalTile.East, &externalTile.South, &externalTile.West, &externalTile.Item);
-    printf("Obtained labyrinth from server\n");
+    int* temp_labyrinth = malloc(labyrinth.area*5*sizeof(int));
+
+    int myTurn = !getLabyrinth(temp_labyrinth, &labyrinth.extraTile.North, &labyrinth.extraTile.East, &labyrinth.extraTile.South, &labyrinth.extraTile.West, &labyrinth.extraTile.Item);
+
+    initLabyrinth(&labyrinth, temp_labyrinth, myTurn);
+
+    printf("Width: %d   |   Height: %d  |   Name: %s\n\n", labyrinth.sizeX, labyrinth.sizeY, labyrinth.name);
+
+//    printRawLabyrinthDebug(temp_labyrinth, labyrinth.sizeX, labyrinth.sizeY);
+//    printf("\n");
+//    printLabyrinthDebug(labyrinth);
+//    printf("\n\n");
+
+    t_move myMove;
+    t_move opponentMove;
 
     int iWon;
-    t_move opponentMove;
     while (1) {
         printLabyrinth();
         if (myTurn) {
-            t_move myMove;
             printf("Please insert the move type, line/column number, rotation and coordinates: ");
-            scanf(" %d %d %d %d %d", &myMove.insert, &myMove.number, &myMove.rotation, &myMove.x, &myMove.y);
+
+            int insert;
+            scanf(" %d %d %d %d %d", &insert, &myMove.number, &myMove.rotation, &myMove.x, &myMove.y);
+            myMove.insert = (t_insertion) insert;
+
             int moveCode = sendMove(&myMove);
 
             if (moveCode != NORMAL_MOVE) {
@@ -44,6 +44,8 @@ int main() {
                 else iWon = 0;
                 break;
             }
+
+
         } else {
             int moveCode = getMove(&opponentMove);
             if (moveCode != NORMAL_MOVE) {
@@ -51,6 +53,9 @@ int main() {
                 else iWon = 1;
                 break;
             }
+
+            labyrinth.opponent.x = opponentMove.x;
+            labyrinth.opponent.y = opponentMove.y;
         }
 
         myTurn = !myTurn;
