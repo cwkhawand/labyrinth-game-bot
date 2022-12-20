@@ -34,11 +34,11 @@ void printLabyrinthDebug(t_labyrinth labyrinth) {
     for (int i = 0; i < labyrinth.sizeY; i++) {
         for (int j = 0; j < labyrinth.sizeX; j++) {
                 printf("%d%d%d%d%d ",
-                       labyrinth.tiles[i*labyrinth.sizeX + j].North,
-                       labyrinth.tiles[i*labyrinth.sizeX + j].East,
-                       labyrinth.tiles[i*labyrinth.sizeX + j].South,
-                       labyrinth.tiles[i*labyrinth.sizeX + j].West,
-                       labyrinth.tiles[i*labyrinth.sizeX + j].Item
+                       labyrinth.tiles[i][j].North,
+                       labyrinth.tiles[i][j].East,
+                       labyrinth.tiles[i][j].South,
+                       labyrinth.tiles[i][j].West,
+                       labyrinth.tiles[i][j].Item
                 );
         }
         printf("\n");
@@ -53,21 +53,26 @@ void printLabyrinthDebug(t_labyrinth labyrinth) {
  * - myTurn: whether it is our turn or the opponent's turn
  */
 void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
+    // set our initial position according to who starts
     labyrinth->me.x = (myTurn) ? 0 : labyrinth->sizeX-1;
     labyrinth->me.y = (myTurn) ? 0 : labyrinth->sizeY-1;
-
+    // set opponent's initial position according to who starts
     labyrinth->opponent.x = (myTurn) ? labyrinth->sizeX-1 : 0;
     labyrinth->opponent.y = (myTurn) ? labyrinth->sizeY-1 : 0;
 
-    labyrinth->tiles = (t_tile*)malloc(labyrinth->area*sizeof(t_tile));
+    // allocate a 2 dimensional array for our labyrinth
+    labyrinth->tiles = (t_tile**)malloc(labyrinth->sizeY*sizeof(t_tile*));
+    for (int i = 0; i < labyrinth->sizeY; i++) {
+        labyrinth->tiles[i] = (t_tile*)malloc(labyrinth->sizeX*sizeof(t_tile));
+    }
 
     for (int i = 0; i < labyrinth->sizeY; i++) {
         for (int j = 0; j < labyrinth->sizeX; j++) {
-            labyrinth->tiles[i*labyrinth->sizeX + j].North = temp_labyrinth[i*labyrinth->sizeX*5 + j*5];
-            labyrinth->tiles[i*labyrinth->sizeX + j].East = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 1];
-            labyrinth->tiles[i*labyrinth->sizeX + j].South = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 2];
-            labyrinth->tiles[i*labyrinth->sizeX + j].West = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 3];
-            labyrinth->tiles[i*labyrinth->sizeX + j].Item = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 4];
+            labyrinth->tiles[i][j].North = temp_labyrinth[i*labyrinth->sizeX*5 + j*5];
+            labyrinth->tiles[i][j].East = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 1];
+            labyrinth->tiles[i][j].South = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 2];
+            labyrinth->tiles[i][j].West = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 3];
+            labyrinth->tiles[i][j].Item = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 4];
         }
     }
 }
@@ -94,25 +99,25 @@ void updateLabyrinth(t_labyrinth* labyrinth, int myTurn, t_move move) {
     // move lines/columns according to the inserted tile
     if (move.insert == INSERT_LINE_LEFT) {
         for (int i = labyrinth->sizeX-2; i >= 0; i--) {
-            labyrinth->tiles[move.number*labyrinth->sizeX + i+1] = labyrinth->tiles[move.number*labyrinth->sizeX + i];
+            labyrinth->tiles[move.number][i+1] = labyrinth->tiles[move.number][i];
         }
-        labyrinth->tiles[move.number*labyrinth->sizeX] = labyrinth->extraTile;
+        labyrinth->tiles[move.number][0] = labyrinth->extraTile;
 
     } else if (move.insert == INSERT_LINE_RIGHT) {
         for (int i = 1; i < labyrinth->sizeX; i++) {
-            labyrinth->tiles[move.number*labyrinth->sizeX + i-1] = labyrinth->tiles[move.number*labyrinth->sizeX + i];
+            labyrinth->tiles[move.number][i-1] = labyrinth->tiles[move.number][i];
         }
-        labyrinth->tiles[move.number*labyrinth->sizeX + labyrinth->sizeX - 1] = labyrinth->extraTile;
+        labyrinth->tiles[move.number][labyrinth->sizeX - 1] = labyrinth->extraTile;
     } else if (move.insert == INSERT_COLUMN_TOP) {
         for (int i = labyrinth->sizeY-2; i >= 0; i--) {
-            labyrinth->tiles[(i+1)*labyrinth->sizeX + move.number] = labyrinth->tiles[i*labyrinth->sizeX + move.number];
+            labyrinth->tiles[i+1][move.number] = labyrinth->tiles[i][move.number];
         }
-        labyrinth->tiles[move.number] = labyrinth->extraTile;
+        labyrinth->tiles[0][move.number] = labyrinth->extraTile;
     } else if (move.insert == INSERT_COLUMN_BOTTOM) {
         for (int i = 1; i < labyrinth->sizeY; i++) {
-            labyrinth->tiles[(i-1)*labyrinth->sizeX + move.number] = labyrinth->tiles[i*labyrinth->sizeX + move.number];
+            labyrinth->tiles[i-1][move.number] = labyrinth->tiles[i][move.number];
         }
-        labyrinth->tiles[(labyrinth->sizeY-1)*labyrinth->sizeX + move.number] = labyrinth->extraTile;
+        labyrinth->tiles[labyrinth->sizeY-1][move.number] = labyrinth->extraTile;
     }
 
     // Update the extra tile

@@ -21,7 +21,7 @@ typedef struct labyrinth {
     int sizeX;
     int sizeY;
     int area;
-    t_tile* tiles;
+    t_tile** tiles;
     t_tile extraTile;
     t_player me;
     t_player opponent;
