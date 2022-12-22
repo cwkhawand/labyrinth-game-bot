@@ -81,37 +81,33 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
     }
 }
 
-/* Function: updateLabyrinth
- * Updates the labyrinth structure
- * Arguments:
- * - labyrinth: a pointer to the labyrinth structure
- * - myTurn: whether it was our turn or the opponent's turn
+/* Function: movePlayer
+ * Moves a given player according to the insertion
+ * - labyrinth: the labyrinth structure
+ * - player: a pointer to the player
  * - move: the move which was done
  */
-void updateLabyrinth(t_labyrinth* labyrinth, int myTurn, t_move move) {
-    // Update our or the opponent's position and item
-    if (myTurn) {
-        labyrinth->me.x = move.x;
-        labyrinth->me.y = move.y;
-        labyrinth->me.item = move.nextItem;
-    } else {
-        labyrinth->opponent.x = move.x;
-        labyrinth->opponent.y = move.y;
-        labyrinth->opponent.item = move.nextItem;
+void movePlayer(t_labyrinth labyrinth, t_player* player, t_move move) {
+    if (move.insert == INSERT_LINE_LEFT && player->y == move.number) {
+        player->x = (player->x+1)%labyrinth.sizeX;
+    } else if (move.insert == INSERT_LINE_RIGHT && player->y == move.number) {
+        player->x = (player->x-1)%labyrinth.sizeX;
+        if (player->x < 0) player->x = labyrinth.sizeX-1;
+    } else if (move.insert == INSERT_COLUMN_TOP && player->x == move.number) {
+        player->y = (player->y+1)%labyrinth.sizeY;
+    } else if (move.insert == INSERT_COLUMN_BOTTOM && player->x == move.number) {
+        player->y = (player->y-1)%labyrinth.sizeY;
+        if (player->y < 0) player->y = labyrinth.sizeY-1;
     }
+}
 
-    // Update the forbidden move
-    if (move.insert == 0) {
-        labyrinth->forbiddenMove.insert = 1;
-    } else if (move.insert == 1) {
-        labyrinth->forbiddenMove.insert = 0;
-    } else if (move.insert == 2) {
-        labyrinth->forbiddenMove.insert = 3;
-    } else if (move.insert == 3) {
-        labyrinth->forbiddenMove.insert = 2;
-    }
-    labyrinth->forbiddenMove.number = move.number;
-
+/* Function: insertExtraTile
+ * Inserts a tile into the labyrinth
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ * - move: the move which was done
+ */
+void insertExtraTile(t_labyrinth* labyrinth, t_move move) {
     // move lines/columns according to the inserted tile
     if (move.insert == INSERT_LINE_LEFT) {
         for (int i = labyrinth->sizeX-2; i >= 0; i--) {
@@ -135,6 +131,44 @@ void updateLabyrinth(t_labyrinth* labyrinth, int myTurn, t_move move) {
         }
         labyrinth->tiles[labyrinth->sizeY-1][move.number] = labyrinth->extraTile;
     }
+}
+
+/* Function: playMyTurn
+ * Updates the labyrinth structure when we make a move
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ * - move: the move which was done
+ */
+void playMyTurn(t_labyrinth* labyrinth, t_move move) {
+    insertExtraTile(labyrinth, move);
+
+    // Update players positions and items
+    labyrinth->me.x = move.x;
+    labyrinth->me.y = move.y;
+    labyrinth->me.item = move.nextItem;
+    movePlayer(*labyrinth, &labyrinth->opponent, move);
+}
+
+/* Function: updateLabyrinth
+ * Updates the labyrinth structure when the opponent makes a move
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ * - move: the move which was done
+ */
+void updateLabyrinth(t_labyrinth* labyrinth, t_move move) {
+    // Update the forbidden move
+    if (move.insert == 0) {
+        labyrinth->forbiddenMove.insert = 1;
+    } else if (move.insert == 1) {
+        labyrinth->forbiddenMove.insert = 0;
+    } else if (move.insert == 2) {
+        labyrinth->forbiddenMove.insert = 3;
+    } else if (move.insert == 3) {
+        labyrinth->forbiddenMove.insert = 2;
+    }
+    labyrinth->forbiddenMove.number = move.number;
+
+    insertExtraTile(labyrinth, move);
 
     // Update the extra tile
     labyrinth->extraTile.North = move.tileN;
@@ -142,6 +176,12 @@ void updateLabyrinth(t_labyrinth* labyrinth, int myTurn, t_move move) {
     labyrinth->extraTile.South = move.tileS;
     labyrinth->extraTile.West = move.tileW;
     labyrinth->extraTile.Item = move.tileItem;
+
+    // Update players positions and items
+    movePlayer(*labyrinth, &labyrinth->me, move);
+    labyrinth->opponent.x = move.x;
+    labyrinth->opponent.y = move.y;
+    labyrinth->opponent.item = move.nextItem;
 }
 
 /* Function: isForbiddenMove
@@ -156,3 +196,18 @@ int isForbiddenMove(t_labyrinth labyrinth, t_move move) {
 
     return 0;
 }
+
+/*
+ * Pour la fonction qui essaie de jouer le mieux posssible, on va essayer toutes les combinaisons d'insertions et de rotations
+ * a chaque tour et pour chaque combinaison, on va retenir le Manhattan distance le plus petit entre le tresor, et le point
+ * d'expansion courant. On retient les 2 meilleures insertions avec les distances de Manhattan les plus petites.
+ * Si l'insertion fait sauter le tresor en dehors du labyrinthe, pour l'instant on ignore l'insertion.
+ * On essaie d'effectuer la 1ere. Si echec, on effectue la 2eme moins optimale.
+ *
+ * Bonus: essayer de semer le trouble a son adversaire
+ *         Pour ce faire, si la partie qu'on a choisi de jouer qui nous rapproche le plus du tresor ne nous menes pas
+ *         directement on tresor mais elle permet a l'adversaire d'arriver a son tresor avec une insertion,
+ *         on essaie de trouver le coup qui ne laissera pas l'adversaire trouver le tresor, tout en respectant l'ordre
+ *         d'importance (par distance Manhattan) des insertions deja calculees precedemment.
+ *         Si malgre tout toutes les routes menent a Rome, on joue le tour le plus favorable pour nous.
+ */

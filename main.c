@@ -8,7 +8,7 @@ int main() {
 
     // Connect to server and obtain game information
     connectToServer("172.105.76.204", 1234, "DataCell");
-    waitForLabyrinth("TRAINING DONTMOVE timeout=1000 start=0 seed=0x02a1da", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
+    waitForLabyrinth("TRAINING RANDOM timeout=1000 start=0 seed=0x02a1da", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
 
     labyrinth.area = labyrinth.sizeX*labyrinth.sizeY;
 
@@ -32,11 +32,9 @@ int main() {
 //        printLabyrinthDebug(labyrinth);
 
         if (myTurn) {
-            int insert;
             do {
                 printf("Please insert the move type, line/column number, rotation and coordinates: ");
-                scanf(" %d %d %d %d %d", &insert, &move.number, &move.rotation, &move.x, &move.y);
-                move.insert = (t_insertion) insert;
+                scanf(" %d %d %d %d %d", (int*)&move.insert, &move.number, &move.rotation, &move.x, &move.y);
 
                 if (move.number % 2 != 1)
                     printf("The line/column number must be an odd number!\n");
@@ -54,7 +52,7 @@ int main() {
                 break;
             }
 
-
+            playMyTurn(&labyrinth, move);
         } else {
             int moveCode = getMove(&move);
             if (moveCode != NORMAL_MOVE) {
@@ -63,12 +61,10 @@ int main() {
                 break;
             }
 
-            labyrinth.opponent.x = move.x;
-            labyrinth.opponent.y = move.y;
+            updateLabyrinth(&labyrinth, move);
         }
 
-        updateLabyrinth(&labyrinth, myTurn, move);
-
+        printf("I am at (%d, %d)    |   Opponent at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y, labyrinth.opponent.x, labyrinth.opponent.y);
         myTurn = !myTurn;
     }
 

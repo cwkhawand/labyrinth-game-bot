@@ -56,14 +56,37 @@ void printLabyrinthDebug(t_labyrinth labyrinth);
  */
 void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn);
 
-/* Function: updateLabyrinth
- * Updates the labyrinth structure
+/* Function: movePlayer
+ * Moves a given player according to the insertion
+ * - labyrinth: the labyrinth structure
+ * - player: a pointer to the player
+ * - move: the move which was done
+ */
+void movePlayer(t_labyrinth labyrinth, t_player* player, t_move move);
+
+/* Function: insertExtraTile
+ * Inserts a tile into the labyrinth
  * Arguments:
- * - myTurn: whether it was our turn or the opponent's turn
  * - labyrinth: a pointer to the labyrinth structure
  * - move: the move which was done
  */
-void updateLabyrinth(t_labyrinth* labyrinth, int myTurn, t_move move);
+void insertExtraTile(t_labyrinth* labyrinth, t_move move);
+
+/* Function: playMyTurn
+ * Updates the labyrinth structure when we make a move
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ * - move: the move which was done
+ */
+void playMyTurn(t_labyrinth* labyrinth, t_move move);
+
+/* Function: updateLabyrinth
+ * Updates the labyrinth structure when the opponent makes a move
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ * - move: the move which was done
+ */
+void updateLabyrinth(t_labyrinth* labyrinth, t_move move);
 
 /* Function: isForbiddenMove
  * Returns 1 if a move is forbidden, 0 otherwise

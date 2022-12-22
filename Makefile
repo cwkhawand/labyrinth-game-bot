@@ -14,7 +14,7 @@ EXEC=Labyrinth
 
 # règle initiale
 all: $(EXEC)
-	./bin/labyrinth
+	$(BUILD_DIR)/$(EXEC)
 
 clientAPI.o: $(LIB_DIR)/Labyrinthe/clientAPI.h $(LIB_DIR)/Labyrinthe/clientAPI.c
 labyrinthAPI.o: $(LIB_DIR)/Labyrinthe/labyrinthAPI.h $(LIB_DIR)/Labyrinthe/labyrinthAPI.c $(LIB_DIR)/Labyrinthe/clientAPI.h
