@@ -104,4 +104,19 @@ void updateLabyrinth(t_labyrinth* labyrinth, t_move move);
  */
 int isForbiddenMove(t_labyrinth labyrinth, t_move move);
 
+/* Function: copyLabyrinth
+ * Deep copies a labyrinth
+ * Arguments:
+ * - labyrinth: the labyrinth structure
+ * - labyrinth_copy: a pointer to an initialized t_labyrinth structure
+ */
+void copyLabyrinth(t_labyrinth labyrinth, t_labyrinth* labyrinth_copy);
+
+/* Function: copyLabyrinth
+ * Deep frees a labyrinth from memory
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ */
+void freeLabyrinth(t_labyrinth* labyrinth);
+
 #endif

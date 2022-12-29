@@ -207,6 +207,41 @@ int isForbiddenMove(t_labyrinth labyrinth, t_move move) {
     return 0;
 }
 
+/* Function: copyLabyrinth
+ * Deep copies a labyrinth
+ * Arguments:
+ * - labyrinth: the labyrinth structure
+ * - labyrinth_copy: a pointer to an initialized t_labyrinth structure
+ */
+void copyLabyrinth(t_labyrinth labyrinth, t_labyrinth* labyrinth_copy) {
+    *labyrinth_copy = labyrinth; // copy everything that's not a pointer
+
+    // allocate a 2 dimensional array for our labyrinth copy
+    labyrinth_copy->tiles = (t_tile**)malloc(labyrinth_copy->sizeY*sizeof(t_tile*));
+    for (int i = 0; i < labyrinth_copy->sizeY; i++) {
+        labyrinth_copy->tiles[i] = (t_tile*)malloc(labyrinth_copy->sizeX*sizeof(t_tile));
+    }
+
+    for (int i = 0; i < labyrinth.sizeY; i++) {
+        for (int j = 0; j < labyrinth.sizeX; j++) {
+            labyrinth_copy->tiles[i][j] = labyrinth.tiles[i][j];
+        }
+    }
+}
+
+/* Function: copyLabyrinth
+ * Deep frees a labyrinth from memory
+ * Arguments:
+ * - labyrinth: a pointer to the labyrinth structure
+ */
+void freeLabyrinth(t_labyrinth* labyrinth) {
+    // de-allocate the 2 dimensional array of our labyrinth copy
+    for (int i = 0; i < labyrinth->sizeY; i++) {
+        free(labyrinth->tiles[i]);
+    }
+    free(labyrinth->tiles);
+}
+
 /*
  * Pour la fonction qui essaie de jouer le mieux posssible, on va essayer toutes les combinaisons d'insertions et de rotations
  * a chaque tour et pour chaque combinaison, on va retenir le Manhattan distance le plus petit entre le tresor, et le point
