@@ -7,7 +7,7 @@ int main() {
     t_labyrinth labyrinth;
 
     // Connect to server and obtain game information
-    connectToServer("172.105.76.204", 1234, "DataCell");
+    connectToServer("172.105.76.204", 3456, "DataCell");
     waitForLabyrinth("TRAINING RANDOM timeout=1000 start=0 seed=0x02a1da", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
 
     labyrinth.area = labyrinth.sizeX*labyrinth.sizeY;
@@ -16,22 +16,22 @@ int main() {
     int* temp_labyrinth = malloc(labyrinth.area*5*sizeof(int));
 
     // obtain labyrinth information
-    int myTurn = !getLabyrinth(temp_labyrinth, &labyrinth.extraTile.North, &labyrinth.extraTile.East, &labyrinth.extraTile.South, &labyrinth.extraTile.West, &labyrinth.extraTile.Item);
+    int my_turn = !getLabyrinth(temp_labyrinth, &labyrinth.extraTile.North, &labyrinth.extraTile.East, &labyrinth.extraTile.South, &labyrinth.extraTile.West, &labyrinth.extraTile.Item);
 
     // initiate labyrinth values
-    initLabyrinth(&labyrinth, temp_labyrinth, myTurn);
+    initLabyrinth(&labyrinth, temp_labyrinth, my_turn);
 
     printf("Width: %d   |   Height: %d  |   Name: %s\n\n", labyrinth.sizeX, labyrinth.sizeY, labyrinth.name);
 
     t_move move;
 
-    int iWon;
+    int i_won;
     while (1) {
         printLabyrinth();
 
 //        printLabyrinthDebug(labyrinth);
 
-        if (myTurn) {
+        if (my_turn) {
             do {
                 printf("Please insert the move type, line/column number, rotation and coordinates: ");
                 scanf(" %d %d %d %d %d", (int*)&move.insert, &move.number, &move.rotation, &move.x, &move.y);
@@ -47,8 +47,8 @@ int main() {
             int moveCode = sendMove(&move);
 
             if (moveCode != NORMAL_MOVE) {
-                if (moveCode == WINNING_MOVE) iWon = 1;
-                else iWon = 0;
+                if (moveCode == WINNING_MOVE) i_won = 1;
+                else i_won = 0;
                 break;
             }
 
@@ -56,8 +56,8 @@ int main() {
         } else {
             int moveCode = getMove(&move);
             if (moveCode != NORMAL_MOVE) {
-                if (moveCode == WINNING_MOVE) iWon = 0;
-                else iWon = 1;
+                if (moveCode == WINNING_MOVE) i_won = 0;
+                else i_won = 1;
                 break;
             }
 
@@ -65,13 +65,13 @@ int main() {
         }
 
         printf("I am at (%d, %d)    |   Opponent at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y, labyrinth.opponent.x, labyrinth.opponent.y);
-        myTurn = !myTurn;
+        my_turn = !my_turn;
     }
 
     // Close the connection to the server
     closeConnection();
 
-    if (iWon) {
+    if (i_won) {
         printf("We won!\n");
     } else {
         printf("We lost...\n");

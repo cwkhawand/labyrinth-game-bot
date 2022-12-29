@@ -81,6 +81,21 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
     }
 }
 
+/* Function: rotateTile
+ * Inserts a tile into the labyrinth
+ * Arguments:
+ * - tile: the tile to be rotated
+ * - rotations: the amount of quarter clockwise rotations to be done (0 to 3)
+ */
+void rotateTile(t_tile* tile, int rotations) {
+    for (int i = 0; i < rotations; i++) {
+        tile->North = tile->West;
+        tile->East = tile->North;
+        tile->South = tile->East;
+        tile->West = tile->South;
+    }
+}
+
 /* Function: movePlayer
  * Moves a given player according to the insertion
  * - labyrinth: the labyrinth structure
@@ -157,17 +172,12 @@ void playMyTurn(t_labyrinth* labyrinth, t_move move) {
  */
 void updateLabyrinth(t_labyrinth* labyrinth, t_move move) {
     // Update the forbidden move
-    if (move.insert == 0) {
-        labyrinth->forbiddenMove.insert = 1;
-    } else if (move.insert == 1) {
-        labyrinth->forbiddenMove.insert = 0;
-    } else if (move.insert == 2) {
-        labyrinth->forbiddenMove.insert = 3;
-    } else if (move.insert == 3) {
-        labyrinth->forbiddenMove.insert = 2;
-    }
+    int oppositeMoves[4] = {1, 0, 3, 2};
+    labyrinth->forbiddenMove.insert = oppositeMoves[move.insert];
+
     labyrinth->forbiddenMove.number = move.number;
 
+    rotateTile(&labyrinth->extraTile, move.rotation);
     insertExtraTile(labyrinth, move);
 
     // Update the extra tile
@@ -201,8 +211,8 @@ int isForbiddenMove(t_labyrinth labyrinth, t_move move) {
  * Pour la fonction qui essaie de jouer le mieux posssible, on va essayer toutes les combinaisons d'insertions et de rotations
  * a chaque tour et pour chaque combinaison, on va retenir le Manhattan distance le plus petit entre le tresor, et le point
  * d'expansion courant. On retient les 2 meilleures insertions avec les distances de Manhattan les plus petites.
- * Si l'insertion fait sauter le tresor en dehors du labyrinthe, pour l'instant on ignore l'insertion.
- * On essaie d'effectuer la 1ere. Si echec, on effectue la 2eme moins optimale.
+ * Si l'insertion fait sauter le tresor en dehors du labyrinthe, on ignore l'insertion.
+ * On essaie d'effectuer la 1ere insertion. Si echec, on effectue la 2eme moins optimale.
  *
  * Bonus: essayer de semer le trouble a son adversaire
  *         Pour ce faire, si la partie qu'on a choisi de jouer qui nous rapproche le plus du tresor ne nous menes pas

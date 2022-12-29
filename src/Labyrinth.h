@@ -56,6 +56,14 @@ void printLabyrinthDebug(t_labyrinth labyrinth);
  */
 void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn);
 
+/* Function: rotateTile
+ * Inserts a tile into the labyrinth
+ * Arguments:
+ * - tile: a pointer to the tile to be rotated
+ * - rotations: the amount of quarter clockwise rotations to be done (0 to 3)
+ */
+void rotateTile(t_tile* tile, int rotations);
+
 /* Function: movePlayer
  * Moves a given player according to the insertion
  * - labyrinth: the labyrinth structure
