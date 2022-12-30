@@ -13,7 +13,7 @@ int main() {
     labyrinth.area = labyrinth.sizeX*labyrinth.sizeY;
 
     // allocation enough space for the raw labyrinth
-    int* temp_labyrinth = malloc(labyrinth.area*5*sizeof(int));
+    int* temp_labyrinth = calloc(labyrinth.area*5, sizeof(int));
 
     // obtain labyrinth information
     int my_turn = !getLabyrinth(temp_labyrinth, &labyrinth.extraTile.North, &labyrinth.extraTile.East, &labyrinth.extraTile.South, &labyrinth.extraTile.West, &labyrinth.extraTile.Item);
@@ -29,10 +29,8 @@ int main() {
     while (1) {
         printLabyrinth();
 
-//        printLabyrinthDebug(labyrinth);
-
         if (my_turn) {
-            do {
+            /*do {
                 printf("Please insert the move type, line/column number, rotation and coordinates: ");
                 scanf(" %d %d %d %d %d", (int*)&move.insert, &move.number, &move.rotation, &move.x, &move.y);
 
@@ -42,7 +40,12 @@ int main() {
                 if (isForbiddenMove(labyrinth, move))
                     printf("This move is forbidden! Please try another one.\n");
 
-            } while(move.number%2 != 1 || isForbiddenMove(labyrinth, move));
+            } while(move.number%2 != 1 || isForbiddenMove(labyrinth, move));*/
+
+            t_coordinates item = getItemCoordinates(labyrinth, labyrinth.me.item);
+            printf("I am at (%d, %d), my item (%d) is at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y, labyrinth.me.item, item.x, item.y);
+            move = findBestMove(labyrinth);
+            printf("Move: insert=%d, number=%d, rotation=%d, x=%d, y=%d\n", move.insert, move.number, move.rotation, move.x, move.y);
 
             int moveCode = sendMove(&move);
 

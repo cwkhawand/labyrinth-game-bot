@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "Labyrinth.h"
 
 /* Function: printRawLabyrinthDebug
@@ -56,18 +57,25 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
     // set our initial position according to who starts
     labyrinth->me.x = (myTurn) ? 0 : labyrinth->sizeX-1;
     labyrinth->me.y = (myTurn) ? 0 : labyrinth->sizeY-1;
+    labyrinth->me.item = (myTurn) ? 1 : 24;
+
     // set opponent's initial position according to who starts
     labyrinth->opponent.x = (myTurn) ? labyrinth->sizeX-1 : 0;
     labyrinth->opponent.y = (myTurn) ? labyrinth->sizeY-1 : 0;
+    labyrinth->opponent.item = (myTurn) ? 24 : 1;
 
     // set forbidden move to not existant
     labyrinth->forbiddenMove.insert = -1;
     labyrinth->forbiddenMove.number = 0;
 
+    labyrinth->amountOfPossibleMoves = (int)(ceil(((double)labyrinth->sizeX)/2) + ceil(((double)labyrinth->sizeY)/2))*8;
+
+    labyrinth->extraTile.isVisited = 0;
+
     // allocate a 2 dimensional array for our labyrinth
-    labyrinth->tiles = (t_tile**)malloc(labyrinth->sizeY*sizeof(t_tile*));
+    labyrinth->tiles = (t_tile**)calloc(labyrinth->sizeY, sizeof(t_tile*));
     for (int i = 0; i < labyrinth->sizeY; i++) {
-        labyrinth->tiles[i] = (t_tile*)malloc(labyrinth->sizeX*sizeof(t_tile));
+        labyrinth->tiles[i] = (t_tile*)calloc(labyrinth->sizeX, sizeof(t_tile));
     }
 
     for (int i = 0; i < labyrinth->sizeY; i++) {
@@ -77,6 +85,7 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
             labyrinth->tiles[i][j].South = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 2];
             labyrinth->tiles[i][j].West = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 3];
             labyrinth->tiles[i][j].Item = temp_labyrinth[i*labyrinth->sizeX*5 + j*5 + 4];
+            labyrinth->tiles[i][j].isVisited = 0;
         }
     }
 }
@@ -89,10 +98,14 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
  */
 void rotateTile(t_tile* tile, int rotations) {
     for (int i = 0; i < rotations; i++) {
-        tile->North = tile->West;
-        tile->East = tile->North;
-        tile->South = tile->East;
-        tile->West = tile->South;
+        int North = tile->West;
+        int East = tile->North;
+        int South = tile->East;
+        int West = tile->South;
+        tile->North = North;
+        tile->East = East;
+        tile->South = South;
+        tile->West = West;
     }
 }
 
@@ -123,6 +136,8 @@ void movePlayer(t_labyrinth labyrinth, t_player* player, t_move move) {
  * - move: the move which was done
  */
 void insertExtraTile(t_labyrinth* labyrinth, t_move move) {
+    rotateTile(&labyrinth->extraTile, move.rotation);
+
     // move lines/columns according to the inserted tile
     if (move.insert == INSERT_LINE_LEFT) {
         for (int i = labyrinth->sizeX-2; i >= 0; i--) {
@@ -177,7 +192,6 @@ void updateLabyrinth(t_labyrinth* labyrinth, t_move move) {
 
     labyrinth->forbiddenMove.number = move.number;
 
-    rotateTile(&labyrinth->extraTile, move.rotation);
     insertExtraTile(labyrinth, move);
 
     // Update the extra tile
@@ -217,9 +231,9 @@ void copyLabyrinth(t_labyrinth labyrinth, t_labyrinth* labyrinth_copy) {
     *labyrinth_copy = labyrinth; // copy everything that's not a pointer
 
     // allocate a 2 dimensional array for our labyrinth copy
-    labyrinth_copy->tiles = (t_tile**)malloc(labyrinth_copy->sizeY*sizeof(t_tile*));
+    labyrinth_copy->tiles = (t_tile**)calloc(labyrinth_copy->sizeY, sizeof(t_tile*));
     for (int i = 0; i < labyrinth_copy->sizeY; i++) {
-        labyrinth_copy->tiles[i] = (t_tile*)malloc(labyrinth_copy->sizeX*sizeof(t_tile));
+        labyrinth_copy->tiles[i] = (t_tile*)calloc(labyrinth_copy->sizeX, sizeof(t_tile));
     }
 
     for (int i = 0; i < labyrinth.sizeY; i++) {
@@ -240,6 +254,199 @@ void freeLabyrinth(t_labyrinth* labyrinth) {
         free(labyrinth->tiles[i]);
     }
     free(labyrinth->tiles);
+}
+
+/* Function: getItemCoordinates
+ * Returns the coordinates of a given item
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - item: the number of the item
+ */
+t_coordinates getItemCoordinates(t_labyrinth labyrinth, int item) {
+    // Attempt to find item in maze
+    for (int i = 0; i < labyrinth.sizeY; i++) {
+        for (int j = 0; j < labyrinth.sizeX; j++) {
+            if (labyrinth.tiles[i][j].Item == item) {
+                t_coordinates coordinates = { .x = j, .y = i };
+                return coordinates;
+            }
+        }
+    }
+
+    // Otherwise it's in the extra tile
+    t_coordinates coordinates = { .x = -1, .y = -1};
+    return coordinates;
+}
+
+/* Function: updateMovesByDistance
+ * Inserts a move into a moves list sorted by distance to destination
+ * Arguments:
+ * - moves: the moves list sorted by distance
+ * - amountOfPossibleMoves: the size of moves
+ * - move: the move to be inserted
+ * - tile: the closest tile to the destination corresponding to the move
+ */
+void updateMovesByDistance(struct movesByDistance* moves, int amountOfPossibleMoves, t_move move, t_coordinates tile) {
+    int insertAt = -1;
+
+    for (int i = 0; i < amountOfPossibleMoves; i++) {
+        if (moves[i].initialized == 0 || tile.distance < moves[i].tile.distance) {
+            insertAt = i;
+            break;
+        }
+    }
+
+    for (int i = amountOfPossibleMoves-2; i >= insertAt; i--) {
+        if (moves[i].initialized != 0)
+            moves[i + 1] = moves[i];
+    }
+
+    moves[insertAt].move = move;
+    moves[insertAt].tile = tile;
+    moves[insertAt].initialized = 1;
+}
+
+/* Function: getNeighbour
+ * Returns the neighbour of a given tile
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - tile: the coordinates of the source tile
+ * - direction: the direction in which to move (0 to 3 resp: North, East, South, West)
+ */
+t_coordinates getNeighbour(t_labyrinth labyrinth, t_coordinates tile, int direction) {
+    t_coordinates neighbour = { .x = tile.x, .y = tile.y };
+
+    /* We modify x or y according to the direction */
+    if (direction == 0) neighbour.y = neighbour.y-1;
+    if (direction == 1) neighbour.x = neighbour.x+1;
+    if (direction == 2) neighbour.y = neighbour.y+1;
+    if (direction == 3) neighbour.x = neighbour.x-1;
+
+    if (neighbour.x < 0 || neighbour.y < 0 || neighbour.x >= labyrinth.sizeX || neighbour.y >= labyrinth.sizeY) {
+        neighbour.x = -1;
+        neighbour.y = -1;
+    }
+
+    return neighbour;
+}
+
+/* Function: isReachableOtherwiseClosest
+ * Returns 1 if the destination is reachable from the source, 0 otherwise.
+ * Also fills closestTile with the closest tile to the destination.
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - source: starting coordinates
+ * - destination: ending coordinates
+ * - currentTile: the current tile we're expanding from. The source tile if calling the function
+ * - closestTile: a pointer to the closest tile. The source with its distance if calling the function
+ */
+int isReachableOtherwiseClosest(t_labyrinth labyrinth, t_coordinates source, t_coordinates destination, t_coordinates currentTile, t_coordinates* closestTile) {
+    t_tile** maze = labyrinth.tiles;
+
+    maze[source.y][source.x].isVisited = 1; // source tile is always at distance 1
+
+    if (maze[currentTile.y][currentTile.x].isVisited == 0) return 0; // skip non-visited tiles
+
+    // Find the closest discovered point to destination
+    int distanceFromDestination = abs(currentTile.x - destination.x) + abs(currentTile.y - destination.y);
+    if (distanceFromDestination < closestTile->distance) {
+        closestTile->x = currentTile.x;
+        closestTile->y = currentTile.y;
+        closestTile->distance = distanceFromDestination;
+    }
+
+    if (currentTile.x == destination.x && currentTile.y == destination.y) return 1; // when we reach the destination, exit
+
+    // We try expanding from each neighbour
+    for (int direction = 0; direction < 4; direction++) {
+        // Skip walls
+        if (direction == 0 && maze[currentTile.y][currentTile.x].North == 1) continue;
+        if (direction == 1 && maze[currentTile.y][currentTile.x].East == 1) continue;
+        if (direction == 2 && maze[currentTile.y][currentTile.x].South == 1) continue;
+        if (direction == 3 && maze[currentTile.y][currentTile.x].West == 1) continue;
+
+        t_coordinates neighbour = getNeighbour(labyrinth, currentTile, direction);
+        // If neighbour is outside the maze, skip it
+        if (neighbour.x == -1 || neighbour.y == -1) continue;
+
+        // can we go back to our original tile from the neighbour?
+        if (direction == 0 && maze[neighbour.y][neighbour.x].South == 1) continue;
+        if (direction == 1 && maze[neighbour.y][neighbour.x].West == 1) continue;
+        if (direction == 2 && maze[neighbour.y][neighbour.x].North == 1) continue;
+        if (direction == 3 && maze[neighbour.y][neighbour.x].East == 1) continue;
+
+        if (maze[neighbour.y][neighbour.x].isVisited == 0) {
+            maze[neighbour.y][neighbour.x].isVisited = maze[currentTile.y][currentTile.x].isVisited + 1;
+            if (isReachableOtherwiseClosest(labyrinth, source, destination, neighbour, closestTile))
+                return 1;
+        }
+    }
+
+    return 0;
+}
+
+/* Function: findBestMove
+ * Attempt to find the best move to be played
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ */
+t_move findBestMove(t_labyrinth labyrinth) {
+    struct movesByDistance* moves = calloc(labyrinth.amountOfPossibleMoves, sizeof(struct movesByDistance));
+
+    int foundWinningMove = 0;
+    t_move move;
+    for (int insert = 0; insert < 1; insert++) {
+        for (int number = 1; number < labyrinth.sizeY-1; number += 2) {
+            if (labyrinth.forbiddenMove.insert == insert && labyrinth.forbiddenMove.number == number) continue;
+
+            for (int rotation = 0; rotation < 4; rotation++) {
+                t_labyrinth labyrinth_copy;
+                copyLabyrinth(labyrinth, &labyrinth_copy);
+
+                move.insert = insert;
+                move.number = number;
+                move.rotation = rotation;
+                insertExtraTile(&labyrinth_copy, move);
+
+                // Update players positions and items
+                movePlayer(labyrinth_copy, &labyrinth_copy.me, move);
+                movePlayer(labyrinth_copy, &labyrinth_copy.opponent, move);
+
+                t_coordinates destination = getItemCoordinates(labyrinth_copy, labyrinth_copy.me.item);
+
+                // If item is ejected, skip the move
+                if (destination.x == -1 && destination.y == -1) {
+                    freeLabyrinth(&labyrinth_copy);
+                    continue;
+                }
+
+                t_coordinates source = { .x = labyrinth_copy.me.x, .y = labyrinth_copy.me.y, .distance = abs(labyrinth_copy.me.x - destination.x) + abs(labyrinth_copy.me.y - destination.y) };
+                t_coordinates closestTile = source;
+                if (isReachableOtherwiseClosest(labyrinth_copy, source, destination, source, &closestTile))
+                    foundWinningMove = 1;
+
+                printf("Insertion: %d, number: %d, rotation: %d - Closest tile: x: %d, y: %d\n", move.insert, move.number, move.rotation, closestTile.x, closestTile.y);
+
+//                for (int i = 0; i < labyrinth_copy.sizeY; i++) {
+//                    for (int j = 0; j < labyrinth_copy.sizeX; j++) {
+//                        printf("%d ", labyrinth_copy.tiles[i][j].isVisited);
+//                    }
+//                    printf("\n");
+//                }
+//
+//                printLabyrinthDebug(labyrinth_copy);
+
+                updateMovesByDistance(moves, labyrinth_copy.amountOfPossibleMoves, move, closestTile);
+                freeLabyrinth(&labyrinth_copy);
+            }
+        }
+    }
+
+    move = moves[0].move;
+    move.x = moves[0].tile.x;
+    move.y = moves[0].tile.y;
+    //free(moves);
+    return move;
 }
 
 /*

@@ -1,7 +1,7 @@
 # options de compilation
 CC=gcc
 CCFLAGS=-Wall
-LIBS=
+LIBS=-lm
 LIBSDIR=
 BUILD_DIR=bin
 SRC_DIR=src

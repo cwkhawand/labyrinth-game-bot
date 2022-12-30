@@ -2,6 +2,12 @@
 #define PROJECT_LABYRINTH_H
 #include "../lib/Labyrinthe/labyrinthAPI.h"
 
+typedef struct coordinates {
+    int x;
+    int y;
+    int distance; // optional distance field
+} t_coordinates;
+
 typedef struct player {
     int x;
     int y;
@@ -14,13 +20,21 @@ typedef struct tile {
     int South;
     int West;
     int Item;
+    int isVisited;
 } t_tile;
+
+struct movesByDistance {
+    t_move move;
+    t_coordinates tile;
+    int initialized;
+};
 
 typedef struct labyrinth {
     char name[50];
     int sizeX;
     int sizeY;
     int area;
+    int amountOfPossibleMoves;
     t_tile** tiles;
     t_tile extraTile;
     t_player me;
@@ -118,5 +132,51 @@ void copyLabyrinth(t_labyrinth labyrinth, t_labyrinth* labyrinth_copy);
  * - labyrinth: a pointer to the labyrinth structure
  */
 void freeLabyrinth(t_labyrinth* labyrinth);
+
+/* Function: getItemCoordinates
+ * Returns the coordinates of a given item
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - item: the number of the item
+ */
+t_coordinates getItemCoordinates(t_labyrinth labyrinth, int item);
+
+/* Function: updateMovesByDistance
+ * Inserts a move into a moves list sorted by distance to destination
+ * Arguments:
+ * - moves: the moves list sorted by distance
+ * - amountOfPossibleMoves: the size of moves
+ * - move: the move to be inserted
+ * - tile: the closest tile to the destination corresponding to the move
+ */
+void updateMovesByDistance(struct movesByDistance* moves, int amountOfPossibleMoves, t_move move, t_coordinates tile);
+
+/* Function: getNeighbour
+ * Returns the neighbour of a given tile
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - tile: the coordinates of the source tile
+ * - direction: the direction in which to move (0 to 3 resp: North, East, South, West)
+ */
+t_coordinates getNeighbour(t_labyrinth labyrinth, t_coordinates tile, int direction);
+
+/* Function: isReachableOtherwiseClosest
+ * Returns 1 if the destination is reachable from the source, 0 otherwise.
+ * Also fills closestTile with the closest tile to the destination.
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - source: starting coordinates
+ * - destination: ending coordinates
+ * - currentTile: the current tile we're expanding from. The source tile if calling the function
+ * - closestTile: a pointer to the closest tile. The source with its distance if calling the function
+ */
+int isReachableOtherwiseClosest(t_labyrinth labyrinth, t_coordinates source, t_coordinates destination, t_coordinates currentTile, t_coordinates* closestTile);
+
+/* Function: findBestMove
+ * Attempt to find the best move to be played
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ */
+t_move findBestMove(t_labyrinth labyrinth);
 
 #endif
