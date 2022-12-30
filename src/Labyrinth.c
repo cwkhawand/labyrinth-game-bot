@@ -138,29 +138,37 @@ void movePlayer(t_labyrinth labyrinth, t_player* player, t_move move) {
 void insertExtraTile(t_labyrinth* labyrinth, t_move move) {
     rotateTile(&labyrinth->extraTile, move.rotation);
 
+    t_tile extraTile;
+
     // move lines/columns according to the inserted tile
     if (move.insert == INSERT_LINE_LEFT) {
+        extraTile = labyrinth->tiles[move.number][labyrinth->sizeX-1];
         for (int i = labyrinth->sizeX-2; i >= 0; i--) {
             labyrinth->tiles[move.number][i+1] = labyrinth->tiles[move.number][i];
         }
         labyrinth->tiles[move.number][0] = labyrinth->extraTile;
 
     } else if (move.insert == INSERT_LINE_RIGHT) {
+        extraTile = labyrinth->tiles[move.number][0];
         for (int i = 1; i < labyrinth->sizeX; i++) {
             labyrinth->tiles[move.number][i-1] = labyrinth->tiles[move.number][i];
         }
         labyrinth->tiles[move.number][labyrinth->sizeX - 1] = labyrinth->extraTile;
     } else if (move.insert == INSERT_COLUMN_TOP) {
+        extraTile = labyrinth->tiles[labyrinth->sizeY-1][move.number];
         for (int i = labyrinth->sizeY-2; i >= 0; i--) {
             labyrinth->tiles[i+1][move.number] = labyrinth->tiles[i][move.number];
         }
         labyrinth->tiles[0][move.number] = labyrinth->extraTile;
     } else if (move.insert == INSERT_COLUMN_BOTTOM) {
+        extraTile = labyrinth->tiles[0][move.number];
         for (int i = 1; i < labyrinth->sizeY; i++) {
             labyrinth->tiles[i-1][move.number] = labyrinth->tiles[i][move.number];
         }
         labyrinth->tiles[labyrinth->sizeY-1][move.number] = labyrinth->extraTile;
     }
+
+    labyrinth->extraTile = extraTile;
 }
 
 /* Function: playMyTurn
@@ -176,7 +184,16 @@ void playMyTurn(t_labyrinth* labyrinth, t_move move) {
     labyrinth->me.x = move.x;
     labyrinth->me.y = move.y;
     labyrinth->me.item = move.nextItem;
+
     movePlayer(*labyrinth, &labyrinth->opponent, move);
+
+    return;
+    // Update the extra tile
+    labyrinth->extraTile.North = move.tileN;
+    labyrinth->extraTile.East = move.tileE;
+    labyrinth->extraTile.South = move.tileS;
+    labyrinth->extraTile.West = move.tileW;
+    labyrinth->extraTile.Item = move.tileItem;
 }
 
 /* Function: updateLabyrinth
@@ -194,18 +211,19 @@ void updateLabyrinth(t_labyrinth* labyrinth, t_move move) {
 
     insertExtraTile(labyrinth, move);
 
+    // Update players positions and items
+    movePlayer(*labyrinth, &labyrinth->me, move);
+    labyrinth->opponent.x = move.x;
+    labyrinth->opponent.y = move.y;
+    labyrinth->opponent.item = move.nextItem;
+
+    return;
     // Update the extra tile
     labyrinth->extraTile.North = move.tileN;
     labyrinth->extraTile.East = move.tileE;
     labyrinth->extraTile.South = move.tileS;
     labyrinth->extraTile.West = move.tileW;
     labyrinth->extraTile.Item = move.tileItem;
-
-    // Update players positions and items
-    movePlayer(*labyrinth, &labyrinth->me, move);
-    labyrinth->opponent.x = move.x;
-    labyrinth->opponent.y = move.y;
-    labyrinth->opponent.item = move.nextItem;
 }
 
 /* Function: isForbiddenMove
@@ -393,10 +411,11 @@ int isReachableOtherwiseClosest(t_labyrinth labyrinth, t_coordinates source, t_c
 t_move findBestMove(t_labyrinth labyrinth) {
     struct movesByDistance* moves = calloc(labyrinth.amountOfPossibleMoves, sizeof(struct movesByDistance));
 
+    int correspondingSize[4] = {labyrinth.sizeY-1, labyrinth.sizeY-1, labyrinth.sizeX-1, labyrinth.sizeX-1};
     int foundWinningMove = 0;
     t_move move;
-    for (int insert = 0; insert < 1; insert++) {
-        for (int number = 1; number < labyrinth.sizeY-1; number += 2) {
+    for (int insert = 0; insert < 4; insert++) {
+        for (int number = 1; number < correspondingSize[insert]; number += 2) {
             if (labyrinth.forbiddenMove.insert == insert && labyrinth.forbiddenMove.number == number) continue;
 
             for (int rotation = 0; rotation < 4; rotation++) {
@@ -424,17 +443,6 @@ t_move findBestMove(t_labyrinth labyrinth) {
                 t_coordinates closestTile = source;
                 if (isReachableOtherwiseClosest(labyrinth_copy, source, destination, source, &closestTile))
                     foundWinningMove = 1;
-
-                printf("Insertion: %d, number: %d, rotation: %d - Closest tile: x: %d, y: %d\n", move.insert, move.number, move.rotation, closestTile.x, closestTile.y);
-
-//                for (int i = 0; i < labyrinth_copy.sizeY; i++) {
-//                    for (int j = 0; j < labyrinth_copy.sizeX; j++) {
-//                        printf("%d ", labyrinth_copy.tiles[i][j].isVisited);
-//                    }
-//                    printf("\n");
-//                }
-//
-//                printLabyrinthDebug(labyrinth_copy);
 
                 updateMovesByDistance(moves, labyrinth_copy.amountOfPossibleMoves, move, closestTile);
                 freeLabyrinth(&labyrinth_copy);

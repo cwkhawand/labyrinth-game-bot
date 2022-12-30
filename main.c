@@ -2,13 +2,14 @@
 #include <stdlib.h>
 #include "lib/Labyrinthe/labyrinthAPI.h"
 #include "src/Labyrinth.h"
+#define DEBUG 0
 
 int main() {
     t_labyrinth labyrinth;
 
     // Connect to server and obtain game information
     connectToServer("172.105.76.204", 3456, "DataCell");
-    waitForLabyrinth("TRAINING RANDOM timeout=1000 start=0 seed=0x02a1da", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
+    waitForLabyrinth("TRAINING RANDOM timeout=1000 start=0", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
 
     labyrinth.area = labyrinth.sizeX*labyrinth.sizeY;
 
@@ -21,13 +22,14 @@ int main() {
     // initiate labyrinth values
     initLabyrinth(&labyrinth, temp_labyrinth, my_turn);
 
-    printf("Width: %d   |   Height: %d  |   Name: %s\n\n", labyrinth.sizeX, labyrinth.sizeY, labyrinth.name);
+    if (DEBUG) printf("Width: %d   |   Height: %d  |   Name: %s\n\n", labyrinth.sizeX, labyrinth.sizeY, labyrinth.name);
+    else printf("Playing against opponent...\n");
 
     t_move move;
 
     int i_won;
     while (1) {
-        printLabyrinth();
+        if (DEBUG) printLabyrinth();
 
         if (my_turn) {
             /*do {
@@ -43,9 +45,9 @@ int main() {
             } while(move.number%2 != 1 || isForbiddenMove(labyrinth, move));*/
 
             t_coordinates item = getItemCoordinates(labyrinth, labyrinth.me.item);
-            printf("I am at (%d, %d), my item (%d) is at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y, labyrinth.me.item, item.x, item.y);
+            if (DEBUG) printf("I am at (%d, %d), my item (%d) is at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y, labyrinth.me.item, item.x, item.y);
             move = findBestMove(labyrinth);
-            printf("Move: insert=%d, number=%d, rotation=%d, x=%d, y=%d\n", move.insert, move.number, move.rotation, move.x, move.y);
+            if (DEBUG) printf("Move: insert=%d, number=%d, rotation=%d, x=%d, y=%d\n", move.insert, move.number, move.rotation, move.x, move.y);
 
             int moveCode = sendMove(&move);
 
@@ -58,16 +60,25 @@ int main() {
             playMyTurn(&labyrinth, move);
         } else {
             int moveCode = getMove(&move);
+
             if (moveCode != NORMAL_MOVE) {
                 if (moveCode == WINNING_MOVE) i_won = 0;
                 else i_won = 1;
                 break;
             }
 
+            if (DEBUG) printf("Opponent move: insert=%d, number=%d, rotation=%d, x=%d, y=%d\n", move.insert, move.number, move.rotation, move.x, move.y);
+
             updateLabyrinth(&labyrinth, move);
         }
 
-        printf("I am at (%d, %d)    |   Opponent at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y, labyrinth.opponent.x, labyrinth.opponent.y);
+        if (DEBUG) {
+            printf("I am at (%d, %d)    |   Opponent at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y, labyrinth.opponent.x, labyrinth.opponent.y);
+            printf("Extra tile: %d%d%d%d%d\n", labyrinth.extraTile.North, labyrinth.extraTile.East, labyrinth.extraTile.South, labyrinth.extraTile.West, labyrinth.extraTile.Item);
+        } else {
+            printf("Next items:\nMe: %d\t\t|\t\tOpponent: %d\n\n", labyrinth.opponent.item, labyrinth.opponent.item);
+        }
+
         my_turn = !my_turn;
     }
 
