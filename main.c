@@ -14,7 +14,7 @@ int main() {
     labyrinth.area = labyrinth.sizeX * labyrinth.sizeY;
 
     // allocation enough space for the raw labyrinth
-    int* temp_labyrinth = calloc(labyrinth.area*5, sizeof(int));
+    int* temp_labyrinth = malloc(labyrinth.area*5*sizeof(int));
 
     // obtain labyrinth information
     int my_turn = !getLabyrinth(temp_labyrinth, &labyrinth.extraTile.North, &labyrinth.extraTile.East, &labyrinth.extraTile.South, &labyrinth.extraTile.West, &labyrinth.extraTile.Item);

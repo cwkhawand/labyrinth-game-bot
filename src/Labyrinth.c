@@ -73,9 +73,9 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
     labyrinth->extraTile.isVisited = 0;
 
     // allocate a 2 dimensional array for our labyrinth
-    labyrinth->tiles = (t_tile**)calloc(labyrinth->sizeY, sizeof(t_tile*));
+    labyrinth->tiles = (t_tile**)malloc(labyrinth->sizeY*sizeof(t_tile*));
     for (int i = 0; i < labyrinth->sizeY; i++) {
-        labyrinth->tiles[i] = (t_tile*)calloc(labyrinth->sizeX, sizeof(t_tile));
+        labyrinth->tiles[i] = (t_tile*)malloc(labyrinth->sizeX*sizeof(t_tile));
     }
 
     for (int i = 0; i < labyrinth->sizeY; i++) {
@@ -239,9 +239,9 @@ void copyLabyrinth(t_labyrinth labyrinth, t_labyrinth* labyrinth_copy) {
     *labyrinth_copy = labyrinth; // copy everything that's not a pointer
 
     // allocate a 2 dimensional array for our labyrinth copy
-    labyrinth_copy->tiles = (t_tile**)calloc(labyrinth_copy->sizeY, sizeof(t_tile*));
+    labyrinth_copy->tiles = (t_tile**)malloc(labyrinth_copy->sizeY*sizeof(t_tile*));
     for (int i = 0; i < labyrinth_copy->sizeY; i++) {
-        labyrinth_copy->tiles[i] = (t_tile*)calloc(labyrinth_copy->sizeX, sizeof(t_tile));
+        labyrinth_copy->tiles[i] = (t_tile*)malloc(labyrinth_copy->sizeX*sizeof(t_tile));
     }
 
     for (int i = 0; i < labyrinth.sizeY; i++) {
