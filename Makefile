@@ -8,18 +8,21 @@ SRC_DIR=src
 LIB_DIR=lib
 
 # fichiers du projet
-SRC=main.c $(SRC_DIR)/Labyrinth.c $(LIB_DIR)/Labyrinthe/clientAPI.c $(LIB_DIR)/Labyrinthe/labyrinthAPI.c
+SRC=main.c $(SRC_DIR)/Labyrinth.c $(LIB_DIR)/Labyrinth/clientAPI.c $(LIB_DIR)/Labyrinth/labyrinthAPI.c
 OBJ=$(SRC:.c=.o)
 EXEC=Labyrinth
 
 # règle initiale
 all: $(EXEC)
+	make run
+
+run:
 	$(BUILD_DIR)/$(EXEC)
 
-clientAPI.o: $(LIB_DIR)/Labyrinthe/clientAPI.h $(LIB_DIR)/Labyrinthe/clientAPI.c
-labyrinthAPI.o: $(LIB_DIR)/Labyrinthe/labyrinthAPI.h $(LIB_DIR)/Labyrinthe/labyrinthAPI.c $(LIB_DIR)/Labyrinthe/clientAPI.h
-Labyrinth.o: $(SRC_DIR)/Labyrinth.h $(SRC_DIR)/Labyrinth.c $(LIB_DIR)/Labyrinthe/labyrinthAPI.h
-main.o: main.c $(LIB_DIR)/Labyrinthe/labyrinthAPI.h $(SRC_DIR)/Labyrinth.h
+clientAPI.o: $(LIB_DIR)/Labyrinth/clientAPI.h $(LIB_DIR)/Labyrinth/clientAPI.c
+labyrinthAPI.o: $(LIB_DIR)/Labyrinth/labyrinthAPI.h $(LIB_DIR)/Labyrinth/labyrinthAPI.c $(LIB_DIR)/Labyrinth/clientAPI.h
+Labyrinth.o: $(SRC_DIR)/Labyrinth.h $(SRC_DIR)/Labyrinth.c $(LIB_DIR)/Labyrinth/labyrinthAPI.h
+main.o: main.c $(LIB_DIR)/Labyrinth/labyrinthAPI.h $(SRC_DIR)/Labyrinth.h
 
 # règles de compilation
 %.o: %.c

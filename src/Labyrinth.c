@@ -138,37 +138,29 @@ void movePlayer(t_labyrinth labyrinth, t_player* player, t_move move) {
 void insertExtraTile(t_labyrinth* labyrinth, t_move move) {
     rotateTile(&labyrinth->extraTile, move.rotation);
 
-    t_tile extraTile;
-
     // move lines/columns according to the inserted tile
     if (move.insert == INSERT_LINE_LEFT) {
-        extraTile = labyrinth->tiles[move.number][labyrinth->sizeX-1];
         for (int i = labyrinth->sizeX-2; i >= 0; i--) {
             labyrinth->tiles[move.number][i+1] = labyrinth->tiles[move.number][i];
         }
         labyrinth->tiles[move.number][0] = labyrinth->extraTile;
 
     } else if (move.insert == INSERT_LINE_RIGHT) {
-        extraTile = labyrinth->tiles[move.number][0];
         for (int i = 1; i < labyrinth->sizeX; i++) {
             labyrinth->tiles[move.number][i-1] = labyrinth->tiles[move.number][i];
         }
         labyrinth->tiles[move.number][labyrinth->sizeX - 1] = labyrinth->extraTile;
     } else if (move.insert == INSERT_COLUMN_TOP) {
-        extraTile = labyrinth->tiles[labyrinth->sizeY-1][move.number];
         for (int i = labyrinth->sizeY-2; i >= 0; i--) {
             labyrinth->tiles[i+1][move.number] = labyrinth->tiles[i][move.number];
         }
         labyrinth->tiles[0][move.number] = labyrinth->extraTile;
     } else if (move.insert == INSERT_COLUMN_BOTTOM) {
-        extraTile = labyrinth->tiles[0][move.number];
         for (int i = 1; i < labyrinth->sizeY; i++) {
             labyrinth->tiles[i-1][move.number] = labyrinth->tiles[i][move.number];
         }
         labyrinth->tiles[labyrinth->sizeY-1][move.number] = labyrinth->extraTile;
     }
-
-    labyrinth->extraTile = extraTile;
 }
 
 /* Function: playMyTurn
@@ -187,7 +179,6 @@ void playMyTurn(t_labyrinth* labyrinth, t_move move) {
 
     movePlayer(*labyrinth, &labyrinth->opponent, move);
 
-    return;
     // Update the extra tile
     labyrinth->extraTile.North = move.tileN;
     labyrinth->extraTile.East = move.tileE;
@@ -217,7 +208,6 @@ void updateLabyrinth(t_labyrinth* labyrinth, t_move move) {
     labyrinth->opponent.y = move.y;
     labyrinth->opponent.item = move.nextItem;
 
-    return;
     // Update the extra tile
     labyrinth->extraTile.North = move.tileN;
     labyrinth->extraTile.East = move.tileE;
@@ -414,8 +404,8 @@ t_move findBestMove(t_labyrinth labyrinth) {
     int correspondingSize[4] = {labyrinth.sizeY-1, labyrinth.sizeY-1, labyrinth.sizeX-1, labyrinth.sizeX-1};
     int foundWinningMove = 0;
     t_move move;
-    for (int insert = 0; insert < 4; insert++) {
-        for (int number = 1; number < correspondingSize[insert]; number += 2) {
+    for (int insert = 0; insert < 4 && !foundWinningMove; insert++) {
+        for (int number = 1; number < correspondingSize[insert] && !foundWinningMove; number += 2) {
             if (labyrinth.forbiddenMove.insert == insert && labyrinth.forbiddenMove.number == number) continue;
 
             for (int rotation = 0; rotation < 4; rotation++) {
@@ -463,6 +453,8 @@ t_move findBestMove(t_labyrinth labyrinth) {
  * d'expansion courant. On retient les 2 meilleures insertions avec les distances de Manhattan les plus petites.
  * Si l'insertion fait sauter le tresor en dehors du labyrinthe, on ignore l'insertion.
  * On essaie d'effectuer la 1ere insertion. Si echec, on effectue la 2eme moins optimale.
+ *
+ * Benchmark: Sans le bonus, l'algorithme arrive à gagner 75% des parties contre le bot BASIC
  *
  * Bonus: essayer de semer le trouble a son adversaire
  *         Pour ce faire, si la partie qu'on a choisi de jouer qui nous rapproche le plus du tresor ne nous menes pas

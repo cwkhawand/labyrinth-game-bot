@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "lib/Labyrinthe/labyrinthAPI.h"
+#include "lib/Labyrinth/labyrinthAPI.h"
 #include "src/Labyrinth.h"
 #define DEBUG 0
 
@@ -8,10 +8,10 @@ int main() {
     t_labyrinth labyrinth;
 
     // Connect to server and obtain game information
-    connectToServer("172.105.76.204", 3456, "DataCell");
-    waitForLabyrinth("TRAINING RANDOM timeout=1000 start=0", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
+    connectToServer("172.105.76.204", 5678, "DataCell");
+    waitForLabyrinth("TRAINING BASIC timeout=1000", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
 
-    labyrinth.area = labyrinth.sizeX*labyrinth.sizeY;
+    labyrinth.area = labyrinth.sizeX * labyrinth.sizeY;
 
     // allocation enough space for the raw labyrinth
     int* temp_labyrinth = calloc(labyrinth.area*5, sizeof(int));
@@ -22,16 +22,24 @@ int main() {
     // initiate labyrinth values
     initLabyrinth(&labyrinth, temp_labyrinth, my_turn);
 
-    if (DEBUG) printf("Width: %d   |   Height: %d  |   Name: %s\n\n", labyrinth.sizeX, labyrinth.sizeY, labyrinth.name);
-    else printf("Playing against opponent...\n");
+    if (DEBUG)
+        printf("Width: %d   |   Height: %d  |   Name: %s\n\n", labyrinth.sizeX, labyrinth.sizeY, labyrinth.name);
+    else
+        printf("Playing against opponent...\n");
+
+    if (my_turn) printf("I start.\n");
+    else printf("Opponent starts.\n");
 
     t_move move;
 
     int i_won;
+    int iterations = 0;
     while (1) {
-        if (DEBUG) printLabyrinth();
+        if (DEBUG)
+            printLabyrinth();
 
         if (my_turn) {
+            iterations++;
             /*do {
                 printf("Please insert the move type, line/column number, rotation and coordinates: ");
                 scanf(" %d %d %d %d %d", (int*)&move.insert, &move.number, &move.rotation, &move.x, &move.y);
@@ -45,9 +53,12 @@ int main() {
             } while(move.number%2 != 1 || isForbiddenMove(labyrinth, move));*/
 
             t_coordinates item = getItemCoordinates(labyrinth, labyrinth.me.item);
-            if (DEBUG) printf("I am at (%d, %d), my item (%d) is at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y, labyrinth.me.item, item.x, item.y);
+            if (DEBUG)
+                printf("I am at (%d, %d), my item (%d) is at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y, labyrinth.me.item, item.x, item.y);
+
             move = findBestMove(labyrinth);
-            if (DEBUG) printf("Move: insert=%d, number=%d, rotation=%d, x=%d, y=%d\n", move.insert, move.number, move.rotation, move.x, move.y);
+            if (DEBUG)
+                printf("Move: insert=%d, number=%d, rotation=%d, x=%d, y=%d\n", move.insert, move.number, move.rotation, move.x, move.y);
 
             int moveCode = sendMove(&move);
 
@@ -67,7 +78,8 @@ int main() {
                 break;
             }
 
-            if (DEBUG) printf("Opponent move: insert=%d, number=%d, rotation=%d, x=%d, y=%d\n", move.insert, move.number, move.rotation, move.x, move.y);
+            if (DEBUG)
+                printf("Opponent move: insert=%d, number=%d, rotation=%d, x=%d, y=%d\n", move.insert, move.number, move.rotation, move.x, move.y);
 
             updateLabyrinth(&labyrinth, move);
         }
@@ -76,7 +88,7 @@ int main() {
             printf("I am at (%d, %d)    |   Opponent at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y, labyrinth.opponent.x, labyrinth.opponent.y);
             printf("Extra tile: %d%d%d%d%d\n", labyrinth.extraTile.North, labyrinth.extraTile.East, labyrinth.extraTile.South, labyrinth.extraTile.West, labyrinth.extraTile.Item);
         } else {
-            printf("Next items:\nMe: %d\t\t|\t\tOpponent: %d\n\n", labyrinth.opponent.item, labyrinth.opponent.item);
+            printf("Next items:\nMe: %d\t\t|\t\tOpponent: %d\n\n", labyrinth.me.item, labyrinth.opponent.item);
         }
 
         my_turn = !my_turn;
@@ -86,7 +98,7 @@ int main() {
     closeConnection();
 
     if (i_won) {
-        printf("We won!\n");
+        printf("We won in %d iterations!\n", iterations);
     } else {
         printf("We lost...\n");
     }

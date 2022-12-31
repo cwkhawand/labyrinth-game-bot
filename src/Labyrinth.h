@@ -1,6 +1,6 @@
 #ifndef PROJECT_LABYRINTH_H
 #define PROJECT_LABYRINTH_H
-#include "../lib/Labyrinthe/labyrinthAPI.h"
+#include "../lib/Labyrinth/labyrinthAPI.h"
 
 typedef struct coordinates {
     int x;
