@@ -58,11 +58,17 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
     labyrinth->me.x = (myTurn) ? 0 : labyrinth->sizeX-1;
     labyrinth->me.y = (myTurn) ? 0 : labyrinth->sizeY-1;
     labyrinth->me.item = (myTurn) ? 1 : 24;
+    labyrinth->me.startingItem = (myTurn) ? 1 : 24;
+    labyrinth->me.finishingItem = (myTurn) ? 24 : 1;
+    labyrinth->me.starts = myTurn;
 
     // set opponent's initial position according to who starts
     labyrinth->opponent.x = (myTurn) ? labyrinth->sizeX-1 : 0;
     labyrinth->opponent.y = (myTurn) ? labyrinth->sizeY-1 : 0;
     labyrinth->opponent.item = (myTurn) ? 24 : 1;
+    labyrinth->opponent.startingItem = (myTurn) ? 24 : 1;
+    labyrinth->opponent.finishingItem = (myTurn) ? 1 : 24;
+    labyrinth->opponent.starts = !myTurn;
 
     // set forbidden move to not existant
     labyrinth->forbiddenMove.insert = -1;
@@ -138,29 +144,42 @@ void movePlayer(t_labyrinth labyrinth, t_player* player, t_move move) {
 void insertExtraTile(t_labyrinth* labyrinth, t_move move) {
     rotateTile(&labyrinth->extraTile, move.rotation);
 
+    t_tile extraTile;
+
     // move lines/columns according to the inserted tile
     if (move.insert == INSERT_LINE_LEFT) {
+        extraTile = labyrinth->tiles[move.number][labyrinth->sizeX-1];
         for (int i = labyrinth->sizeX-2; i >= 0; i--) {
             labyrinth->tiles[move.number][i+1] = labyrinth->tiles[move.number][i];
         }
         labyrinth->tiles[move.number][0] = labyrinth->extraTile;
 
     } else if (move.insert == INSERT_LINE_RIGHT) {
+        extraTile = labyrinth->tiles[move.number][0];
         for (int i = 1; i < labyrinth->sizeX; i++) {
             labyrinth->tiles[move.number][i-1] = labyrinth->tiles[move.number][i];
         }
         labyrinth->tiles[move.number][labyrinth->sizeX - 1] = labyrinth->extraTile;
     } else if (move.insert == INSERT_COLUMN_TOP) {
+        extraTile = labyrinth->tiles[labyrinth->sizeY-1][move.number];
         for (int i = labyrinth->sizeY-2; i >= 0; i--) {
             labyrinth->tiles[i+1][move.number] = labyrinth->tiles[i][move.number];
         }
         labyrinth->tiles[0][move.number] = labyrinth->extraTile;
     } else if (move.insert == INSERT_COLUMN_BOTTOM) {
+        extraTile = labyrinth->tiles[0][move.number];
         for (int i = 1; i < labyrinth->sizeY; i++) {
             labyrinth->tiles[i-1][move.number] = labyrinth->tiles[i][move.number];
         }
         labyrinth->tiles[labyrinth->sizeY-1][move.number] = labyrinth->extraTile;
     }
+
+    labyrinth->extraTile = extraTile;
+    // Update the forbidden move
+    int oppositeMoves[4] = {1, 0, 3, 2};
+    labyrinth->forbiddenMove.insert = oppositeMoves[move.insert];
+
+    labyrinth->forbiddenMove.number = move.number;
 }
 
 /* Function: playMyTurn
@@ -180,11 +199,11 @@ void playMyTurn(t_labyrinth* labyrinth, t_move move) {
     movePlayer(*labyrinth, &labyrinth->opponent, move);
 
     // Update the extra tile
-    labyrinth->extraTile.North = move.tileN;
-    labyrinth->extraTile.East = move.tileE;
-    labyrinth->extraTile.South = move.tileS;
-    labyrinth->extraTile.West = move.tileW;
-    labyrinth->extraTile.Item = move.tileItem;
+//    labyrinth->extraTile.North = move.tileN;
+//    labyrinth->extraTile.East = move.tileE;
+//    labyrinth->extraTile.South = move.tileS;
+//    labyrinth->extraTile.West = move.tileW;
+//    labyrinth->extraTile.Item = move.tileItem;
 }
 
 /* Function: updateLabyrinth
@@ -194,12 +213,6 @@ void playMyTurn(t_labyrinth* labyrinth, t_move move) {
  * - move: the move which was done
  */
 void updateLabyrinth(t_labyrinth* labyrinth, t_move move) {
-    // Update the forbidden move
-    int oppositeMoves[4] = {1, 0, 3, 2};
-    labyrinth->forbiddenMove.insert = oppositeMoves[move.insert];
-
-    labyrinth->forbiddenMove.number = move.number;
-
     insertExtraTile(labyrinth, move);
 
     // Update players positions and items
@@ -209,11 +222,11 @@ void updateLabyrinth(t_labyrinth* labyrinth, t_move move) {
     labyrinth->opponent.item = move.nextItem;
 
     // Update the extra tile
-    labyrinth->extraTile.North = move.tileN;
-    labyrinth->extraTile.East = move.tileE;
-    labyrinth->extraTile.South = move.tileS;
-    labyrinth->extraTile.West = move.tileW;
-    labyrinth->extraTile.Item = move.tileItem;
+//    labyrinth->extraTile.North = move.tileN;
+//    labyrinth->extraTile.East = move.tileE;
+//    labyrinth->extraTile.South = move.tileS;
+//    labyrinth->extraTile.West = move.tileW;
+//    labyrinth->extraTile.Item = move.tileItem;
 }
 
 /* Function: isForbiddenMove
@@ -294,7 +307,7 @@ t_coordinates getItemCoordinates(t_labyrinth labyrinth, int item) {
  * - move: the move to be inserted
  * - tile: the closest tile to the destination corresponding to the move
  */
-void updateMovesByDistance(struct movesByDistance* moves, int amountOfPossibleMoves, t_move move, t_coordinates tile) {
+void updateMovesByDistance(struct movesByDistance* moves, int amountOfPossibleMoves, t_move move, t_coordinates tile, int allowsOpponentToReach) {
     int insertAt = -1;
 
     for (int i = 0; i < amountOfPossibleMoves; i++) {
@@ -312,6 +325,7 @@ void updateMovesByDistance(struct movesByDistance* moves, int amountOfPossibleMo
     moves[insertAt].move = move;
     moves[insertAt].tile = tile;
     moves[insertAt].initialized = 1;
+    moves[insertAt].allowsOpponentToReach = allowsOpponentToReach;
 }
 
 /* Function: getNeighbour
@@ -393,6 +407,51 @@ int isReachableOtherwiseClosest(t_labyrinth labyrinth, t_coordinates source, t_c
     return 0;
 }
 
+int allowsOpponentToReach(t_labyrinth labyrinth){
+    int correspondingSize[4] = {labyrinth.sizeY-1, labyrinth.sizeY-1, labyrinth.sizeX-1, labyrinth.sizeX-1};
+    t_move move;
+    for (int insert = 0; insert < 4; insert++) {
+        for (int number = 1; number < correspondingSize[insert]; number += 2) {
+            if (labyrinth.forbiddenMove.insert == insert && labyrinth.forbiddenMove.number == number) continue;
+
+            for (int rotation = 0; rotation < 4; rotation++) {
+                t_labyrinth labyrinth_copy;
+                copyLabyrinth(labyrinth, &labyrinth_copy);
+
+                move.insert = insert;
+                move.number = number;
+                move.rotation = rotation;
+                insertExtraTile(&labyrinth_copy, move);
+
+                // Update players positions and items
+                movePlayer(labyrinth_copy, &labyrinth_copy.me, move);
+                movePlayer(labyrinth_copy, &labyrinth_copy.opponent, move);
+
+                t_coordinates destination = getItemCoordinates(labyrinth_copy, labyrinth_copy.opponent.item);
+
+                // If item is ejected, skip the move
+                if (destination.x == -1 && destination.y == -1) {
+                    freeLabyrinth(&labyrinth_copy);
+                    continue;
+                }
+
+                t_coordinates source = { .x = labyrinth_copy.opponent.x, .y = labyrinth_copy.opponent.y, .distance = abs(labyrinth_copy.opponent.x - destination.x) + abs(labyrinth_copy.opponent.y - destination.y) };
+                t_coordinates closestTile = source;
+                int allowsReaching = 0;
+                if (isReachableOtherwiseClosest(labyrinth_copy, source, destination, source, &closestTile))
+                    allowsReaching = 1;
+
+                freeLabyrinth(&labyrinth_copy);
+
+                if (allowsReaching)
+                    return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 /* Function: findBestMove
  * Attempt to find the best move to be played
  * Arguments:
@@ -402,10 +461,10 @@ t_move findBestMove(t_labyrinth labyrinth) {
     struct movesByDistance* moves = calloc(labyrinth.amountOfPossibleMoves, sizeof(struct movesByDistance));
 
     int correspondingSize[4] = {labyrinth.sizeY-1, labyrinth.sizeY-1, labyrinth.sizeX-1, labyrinth.sizeX-1};
-    int foundWinningMove = 0;
+    int winningMoves = 0;
     t_move move;
-    for (int insert = 0; insert < 4 && !foundWinningMove; insert++) {
-        for (int number = 1; number < correspondingSize[insert] && !foundWinningMove; number += 2) {
+    for (int insert = 0; insert < 4 && !winningMoves; insert++) {
+        for (int number = 1; number < correspondingSize[insert] && !winningMoves; number += 2) {
             if (labyrinth.forbiddenMove.insert == insert && labyrinth.forbiddenMove.number == number) continue;
 
             for (int rotation = 0; rotation < 4; rotation++) {
@@ -432,21 +491,212 @@ t_move findBestMove(t_labyrinth labyrinth) {
                 t_coordinates source = { .x = labyrinth_copy.me.x, .y = labyrinth_copy.me.y, .distance = abs(labyrinth_copy.me.x - destination.x) + abs(labyrinth_copy.me.y - destination.y) };
                 t_coordinates closestTile = source;
                 if (isReachableOtherwiseClosest(labyrinth_copy, source, destination, source, &closestTile))
-                    foundWinningMove = 1;
+                    winningMoves += 1;
 
-                updateMovesByDistance(moves, labyrinth_copy.amountOfPossibleMoves, move, closestTile);
+                updateMovesByDistance(moves, labyrinth_copy.amountOfPossibleMoves, move, closestTile, allowsOpponentToReach(labyrinth_copy));
                 freeLabyrinth(&labyrinth_copy);
             }
+        }
+    }
+
+    if (winningMoves) {
+        // Try to find the move that wins us but doesn't allow opponent to win
+        for (int i = 0; i < winningMoves; i++) {
+            if (moves[i].allowsOpponentToReach) continue;
+
+            move = moves[i].move;
+            move.x = moves[i].tile.x;
+            move.y = moves[i].tile.y;
+            return move;
+        }
+    } else {
+        // Try to find the move (between the best 3) that gets us closest to item, us but doesn't allow opponent to win
+        for (int i = 0; i < 3; i++) {
+            if (!moves[i].initialized || moves[i].allowsOpponentToReach) continue;
+
+            move = moves[i].move;
+            move.x = moves[i].tile.x;
+            move.y = moves[i].tile.y;
+            return move;
         }
     }
 
     move = moves[0].move;
     move.x = moves[0].tile.x;
     move.y = moves[0].tile.y;
-    //free(moves);
     return move;
 }
 
+int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer, int depth, int maxDepth) {
+    if (maximizingPlayer) node->score = INT_MIN;
+    else node->score = INT_MAX;
+
+    node->children = calloc(labyrinth.amountOfPossibleMoves, sizeof(t_node));
+
+    int nodeNumber = 0;
+    int correspondingSize[4] = {labyrinth.sizeY-1, labyrinth.sizeY-1, labyrinth.sizeX-1, labyrinth.sizeX-1};
+    t_move move;
+    for (int insert = 0; insert < 4; insert++) {
+        for (int number = 1; number < correspondingSize[insert]; number += 2) {
+            if (labyrinth.forbiddenMove.insert == insert && labyrinth.forbiddenMove.number == number) continue;
+
+            for (int rotation = 0; rotation < 4; rotation++) {
+                t_labyrinth labyrinth_copy;
+                copyLabyrinth(labyrinth, &labyrinth_copy);
+
+                move.insert = insert;
+                move.number = number;
+                move.rotation = rotation;
+                insertExtraTile(&labyrinth_copy, move);
+
+                // Update players positions and items
+                movePlayer(labyrinth_copy, &labyrinth_copy.me, move);
+                movePlayer(labyrinth_copy, &labyrinth_copy.opponent, move);
+
+                // Consider that both players are playing their best
+                t_coordinates destination;
+                if (maximizingPlayer) {
+                    destination = getItemCoordinates(labyrinth_copy, labyrinth_copy.me.item);
+                } else {
+                    destination = getItemCoordinates(labyrinth_copy, labyrinth_copy.opponent.item);
+                }
+
+                // If item is ejected, skip the move
+                if (destination.x == -1 && destination.y == -1) {
+                    freeLabyrinth(&labyrinth_copy);
+                    continue;
+                }
+
+                t_coordinates source;
+                if (maximizingPlayer) {
+                    source.x = labyrinth_copy.me.x;
+                    source.y = labyrinth_copy.me.y;
+                    source.distance = abs(labyrinth_copy.me.x - destination.x) + abs(labyrinth_copy.me.y - destination.y);
+                } else {
+                    source.x = labyrinth_copy.opponent.x;
+                    source.y = labyrinth_copy.opponent.y;
+                    source.distance = abs(labyrinth_copy.opponent.x - destination.x) + abs(labyrinth_copy.opponent.y - destination.y);
+                }
+
+                t_coordinates closestTile = source;
+                if (isReachableOtherwiseClosest(labyrinth_copy, source, destination, source, &closestTile)) {
+                    if (maximizingPlayer) {
+                        if (labyrinth_copy.me.starts)
+                            labyrinth_copy.me.item++;
+                        else
+                            labyrinth_copy.me.item--;
+
+                        labyrinth_copy.me.x = destination.x;
+                        labyrinth_copy.me.y = destination.y;
+                    } else {
+                        if (labyrinth_copy.opponent.starts)
+                            labyrinth_copy.opponent.item++;
+                        else
+                            labyrinth_copy.opponent.item--;
+
+                        labyrinth_copy.opponent.x = destination.x;
+                        labyrinth_copy.opponent.y = destination.y;
+                    }
+                } else {
+                    if (maximizingPlayer) {
+                        labyrinth_copy.me.x = closestTile.x;
+                        labyrinth_copy.me.y = closestTile.y;
+                    } else {
+                        labyrinth_copy.opponent.x = closestTile.x;
+                        labyrinth_copy.opponent.y = closestTile.y;
+                    }
+                }
+
+                if (maximizingPlayer) {
+                    move.x = labyrinth_copy.me.x;
+                    move.y = labyrinth_copy.me.y;
+                } else {
+                    move.x = labyrinth_copy.opponent.x;
+                    move.y = labyrinth_copy.opponent.y;
+                }
+
+                int endReached = 0;
+                if ((labyrinth_copy.me.starts && labyrinth_copy.me.item-1 == labyrinth_copy.me.finishingItem) ||
+                (!labyrinth_copy.me.starts && labyrinth_copy.me.item+1 == labyrinth_copy.me.finishingItem) ||
+                (labyrinth_copy.opponent.starts && labyrinth_copy.opponent.item-1 == labyrinth_copy.opponent.finishingItem) ||
+                (!labyrinth_copy.opponent.starts && labyrinth_copy.opponent.item+1 == labyrinth_copy.opponent.finishingItem)) {
+                    endReached = 1;
+                }
+
+                if (depth != maxDepth && !endReached) {
+                    node->children[nodeNumber].head = move;
+                    node->children[nodeNumber].initialized = 1;
+                    node->score = buildMinimaxGraph(labyrinth_copy, &node->children[nodeNumber++], !maximizingPlayer, depth + 1, maxDepth);
+                } else {
+                    node->children[nodeNumber].head = move;
+                    node->children[nodeNumber].initialized = 1;
+                    node->children[nodeNumber].score = abs(labyrinth_copy.opponent.item - labyrinth_copy.opponent.finishingItem)-abs(labyrinth_copy.me.item - labyrinth_copy.me.finishingItem);
+                    if (endReached) node->children[nodeNumber].score += 24;
+                    nodeNumber++;
+                }
+
+                freeLabyrinth(&labyrinth_copy);
+            }
+        }
+    }
+
+    int index = 0;
+    while (index < labyrinth.amountOfPossibleMoves && node->children[index].initialized) {
+        if (maximizingPlayer) node->score = MAX(node->score, node->children[index].score);
+        else node->score = MIN(node->score, node->children[index].score);
+
+        index++;
+    }
+
+    return node->score;
+}
+
+void freeMinimaxGraph(t_labyrinth labyrinth, t_node node) {
+    int index = 0;
+    while (index < labyrinth.amountOfPossibleMoves && node.children && node.children[index].initialized) {
+        freeMinimaxGraph(labyrinth, node.children[index++]);
+    }
+    if (node.children) free(node.children);
+}
+
+void printGraph(t_node node, int depth) {
+    for (int i = 0; i < depth; i++) {
+        printf(" ");
+    }
+    printf("%d\n", node.score);
+
+    if (node.children) {
+        int index = 0;
+        while (node.children[index].initialized) {
+            printGraph(node.children[index++], depth + 1);
+        }
+    }
+}
+
+t_move minimax (t_labyrinth labyrinth, t_move move, int myTurn, int maxDepth) {
+    t_node graph;
+    graph.head = move;
+    graph.score = 0;
+    buildMinimaxGraph(labyrinth, &graph, myTurn, 0, maxDepth);
+    //printGraph(graph, 0);
+
+    int index = 0;
+    int maxWeight = INT_MIN;
+    int maxIndex;
+    while (index < labyrinth.amountOfPossibleMoves && graph.children[index].initialized != 0) {
+        if (graph.children[index].score > maxWeight) {
+            maxWeight = graph.children[index].score;
+            maxIndex = index;
+        }
+        index++;
+    }
+
+    t_move bestMove = graph.children[maxIndex].head;
+
+    freeMinimaxGraph(labyrinth, graph);
+
+    return bestMove;
+}
 /*
  * Pour la fonction qui essaie de jouer le mieux posssible, on va essayer toutes les combinaisons d'insertions et de rotations
  * a chaque tour et pour chaque combinaison, on va retenir le Manhattan distance le plus petit entre le tresor, et le point
@@ -454,12 +704,22 @@ t_move findBestMove(t_labyrinth labyrinth) {
  * Si l'insertion fait sauter le tresor en dehors du labyrinthe, on ignore l'insertion.
  * On essaie d'effectuer la 1ere insertion. Si echec, on effectue la 2eme moins optimale.
  *
- * Benchmark: Sans le bonus, l'algorithme arrive à gagner 75% des parties contre le bot BASIC
- *
  * Bonus: essayer de semer le trouble a son adversaire
  *         Pour ce faire, si la partie qu'on a choisi de jouer qui nous rapproche le plus du tresor ne nous menes pas
  *         directement on tresor mais elle permet a l'adversaire d'arriver a son tresor avec une insertion,
  *         on essaie de trouver le coup qui ne laissera pas l'adversaire trouver le tresor, tout en respectant l'ordre
  *         d'importance (par distance Manhattan) des insertions deja calculees precedemment.
  *         Si malgre tout toutes les routes menent a Rome, on joue le tour le plus favorable pour nous.
+ *
+ * Bonus 2: construire le graphe du jeu et essayer de mener le jeu de facon a ce que l'on gagne le plus de fois possibles
+ *          Usage de l'algorithme minimax.
+ *          Formule empirique:
+ *          P = abs(tresorAdversaire - tresorFinalAdversaire)/abs(monTresor - monTresorFinal + 1)
+ *          Plus P est grand, plus on a des chances de gagner
+ *
+ * Benchmarks:
+ * - Manhattan Distance: 75% win rate versus BASIC
+ * - Manhattan Distance + Anti-win algorithm: 75% win rate versus BASIC
+ * - Euclidian Distance: 74% win rate versus BASIC
+ * - Euclidian Distance + Anti-win algorithm: 74% win rate versus BASIC
  */

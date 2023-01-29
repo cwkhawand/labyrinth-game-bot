@@ -1,6 +1,9 @@
 #ifndef PROJECT_LABYRINTH_H
 #define PROJECT_LABYRINTH_H
 #include "../lib/Labyrinth/labyrinthAPI.h"
+#include <limits.h>
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 typedef struct coordinates {
     int x;
@@ -12,6 +15,9 @@ typedef struct player {
     int x;
     int y;
     int item;
+    int startingItem;
+    int finishingItem;
+    int starts;
 } t_player;
 
 typedef struct tile {
@@ -23,10 +29,19 @@ typedef struct tile {
     int isVisited;
 } t_tile;
 
+typedef struct node t_node;
+struct node {
+    t_move head;
+    int score;
+    int initialized;
+    t_node* children;
+};
+
 struct movesByDistance {
     t_move move;
     t_coordinates tile;
     int initialized;
+    int allowsOpponentToReach;
 };
 
 typedef struct labyrinth {
@@ -149,7 +164,7 @@ t_coordinates getItemCoordinates(t_labyrinth labyrinth, int item);
  * - move: the move to be inserted
  * - tile: the closest tile to the destination corresponding to the move
  */
-void updateMovesByDistance(struct movesByDistance* moves, int amountOfPossibleMoves, t_move move, t_coordinates tile);
+void updateMovesByDistance(struct movesByDistance* moves, int amountOfPossibleMoves, t_move move, t_coordinates tile, int allowsOpponentToReach);
 
 /* Function: getNeighbour
  * Returns the neighbour of a given tile
@@ -179,4 +194,9 @@ int isReachableOtherwiseClosest(t_labyrinth labyrinth, t_coordinates source, t_c
  */
 t_move findBestMove(t_labyrinth labyrinth);
 
+int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer, int depth, int maxDepth);
+
+void freeMinimaxGraph(t_labyrinth labyrinth, t_node node);
+
+t_move minimax (t_labyrinth labyrinth, t_move move, int myTurn, int maxDepth);
 #endif
