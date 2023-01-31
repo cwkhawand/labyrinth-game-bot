@@ -527,42 +527,68 @@ t_move findBestMove(t_labyrinth labyrinth) {
     return move;
 }
 
-int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer, int alpha, int beta, int depth, int maxDepth) {
-    int endReachedWeight = 0;
+/* Function: getWinner
+ * Returns 1 if we win, -1 if opponent wins, 0 otherwise
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ */
+int getWinner (t_labyrinth labyrinth) {
     if ((labyrinth.me.starts && labyrinth.me.item-1 == labyrinth.me.finishingItem) ||
         (!labyrinth.me.starts && labyrinth.me.item+1 == labyrinth.me.finishingItem)){
-        endReachedWeight = 24;
+        return 1;
     } else if(
         (labyrinth.opponent.starts && labyrinth.opponent.item-1 == labyrinth.opponent.finishingItem) ||
         (!labyrinth.opponent.starts && labyrinth.opponent.item+1 == labyrinth.opponent.finishingItem)) {
-        endReachedWeight = -24;
+        return -1;
     }
 
-    if (depth == maxDepth || endReachedWeight != 0) {
-        return endReachedWeight + abs(labyrinth.opponent.item - labyrinth.opponent.finishingItem)-abs(labyrinth.me.item - labyrinth.me.finishingItem);
+    return 0;
+}
+
+/* Function: buildMinimaxGraph
+ * Builds the minimax graph recursively and returns each time the score of the evaluated node
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - maximizingPlayer: whether the current player is the maximizing or the minimizing player
+ * - alpha: variable used for pruning (should be INT_MIN on initial call)
+ * - beta: variable used for pruning (should be INT_MAX on initial call)
+ * - depth: the current depth (should be 0 on initial call)
+ * - maxDepth: the maximum depth to reach before evaluating the node score
+ */
+int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer, int alpha, int beta, int depth, int maxDepth) {
+    // Evaluate current position in the game if maxDepth is reached or the end is reached
+    int endOfGameWinner = getWinner(labyrinth);
+    if (depth == maxDepth || endOfGameWinner) {
+        return (endOfGameWinner*24) + abs(labyrinth.opponent.item - labyrinth.opponent.finishingItem)-abs(labyrinth.me.item - labyrinth.me.finishingItem);
     }
 
+    // Set initial score according to which player's turn it is
     if (maximizingPlayer) node->score = INT_MIN;
     else node->score = INT_MAX;
 
-
+    // Allocate the necessary amount of space for potential children nodes
     node->children = calloc(labyrinth.amountOfPossibleMoves, sizeof(t_node));
 
-    int nodeNumber = 0;
     int correspondingSize[4] = {labyrinth.sizeY-1, labyrinth.sizeY-1, labyrinth.sizeX-1, labyrinth.sizeX-1};
+
+    // Bruteforce all possible moves
+    int nodeChildIndex = 0;
     t_move move;
     for (int insert = 0; insert < 4; insert++) {
         for (int number = 1; number < correspondingSize[insert]; number += 2) {
             if (labyrinth.forbiddenMove.insert == insert && labyrinth.forbiddenMove.number == number) continue;
 
             for (int rotation = 0; rotation < 4; rotation++) {
+                // Create a deep copy of the labyrinth
                 t_labyrinth labyrinth_copy;
                 copyLabyrinth(labyrinth, &labyrinth_copy);
 
+                // Select which player to simulate
                 t_player* player;
                 if (maximizingPlayer) player = &labyrinth_copy.me;
                 else player = &labyrinth_copy.opponent;
 
+                // Prepare the move and insert the tile
                 move.insert = insert;
                 move.number = number;
                 move.rotation = rotation;
@@ -572,9 +598,8 @@ int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer
                 movePlayer(labyrinth_copy, &labyrinth_copy.me, move);
                 movePlayer(labyrinth_copy, &labyrinth_copy.opponent, move);
 
-                // Consider that both players are playing their best
-                t_coordinates destination;
-                destination = getItemCoordinates(labyrinth_copy, player->item);
+                // Find the player's item coordinates
+                t_coordinates destination = getItemCoordinates(labyrinth_copy, player->item);
 
                 // If item is ejected, skip the move
                 if (destination.x == -1 && destination.y == -1) {
@@ -584,6 +609,7 @@ int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer
 
                 t_coordinates source = {.x = player->x, .y = player->y, .distance = abs(player->x - destination.x) + abs(player->y - destination.y)};
 
+                // Attempt to reach destination or get the closest to it
                 t_coordinates closestTile = source;
                 if (isReachableOtherwiseClosest(labyrinth_copy, source, destination, source, &closestTile)) {
                     if (player->starts)
@@ -598,21 +624,27 @@ int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer
                     player->y = closestTile.y;
                 }
 
+                // Update player coordinates
                 move.x = player->x;
                 move.y = player->y;
 
-                node->children[nodeNumber].head = move;
-                node->children[nodeNumber].initialized = 1;
-                int score = buildMinimaxGraph(labyrinth_copy, &node->children[nodeNumber++], !maximizingPlayer, alpha, beta, depth + 1, maxDepth);
+                // Recursively build the minimax graph
+                node->children[nodeChildIndex].head = move;
+                node->children[nodeChildIndex].initialized = 1;
+                int score = buildMinimaxGraph(labyrinth_copy, &node->children[nodeChildIndex++], !maximizingPlayer, alpha, beta, depth + 1, maxDepth);
 
+                // Maximize/Minimize the node's score
                 if (maximizingPlayer) node->score = MAX(node->score, score);
                 else node->score = MIN(node->score, score);
 
+                // Update alpha/beta
                 if (maximizingPlayer) alpha = MAX(alpha, score);
                 else beta = MIN(beta, score);
 
+                // Free the copied labyrinth
                 freeLabyrinth(&labyrinth_copy);
 
+                // Stop exploring if a better position already exists
                 if (beta <= alpha)
                     return node->score;
             }
@@ -622,35 +654,39 @@ int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer
     return node->score;
 }
 
+/* Function: freeMinimaxGraph
+ * Deep frees the given minimax graph
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - node: the current node we're on (should be the head of the graph on the initial call)
+ */
 void freeMinimaxGraph(t_labyrinth labyrinth, t_node node) {
+    // Deep search minimax graph
     int index = 0;
     while (index < labyrinth.amountOfPossibleMoves && node.children && node.children[index].initialized) {
         freeMinimaxGraph(labyrinth, node.children[index++]);
     }
+
+    // Free node children if they exist
     if (node.children) free(node.children);
 }
 
-void printGraph(t_node node, int depth) {
-    for (int i = 0; i < depth; i++) {
-        printf(" ");
-    }
-    printf("%d\n", node.score);
-
-    if (node.children) {
-        int index = 0;
-        while (node.children[index].initialized) {
-            printGraph(node.children[index++], depth + 1);
-        }
-    }
-}
-
+/* Function: minimax
+ * Uses the minimax algorithm to return the best move evaluated
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - move: the latest move
+ * - myTurn: whether it is our turn or the opponent's turn
+ * - maxDepth: the maximum depth to reach before evaluating the node score
+ */
 t_move minimax (t_labyrinth labyrinth, t_move move, int myTurn, int maxDepth) {
+    // Build minimax graph
     t_node graph;
     graph.head = move;
     graph.score = 0;
     buildMinimaxGraph(labyrinth, &graph, myTurn, INT_MIN, INT_MAX, 0, maxDepth);
-    //printGraph(graph, 0);
 
+    // Find best move according to the graph
     int index = 0;
     int maxWeight = INT_MIN;
     int maxIndex;
@@ -662,13 +698,16 @@ t_move minimax (t_labyrinth labyrinth, t_move move, int myTurn, int maxDepth) {
         index++;
     }
 
+    // Free the graph and return the move
     t_move bestMove = graph.children[maxIndex].head;
-
     freeMinimaxGraph(labyrinth, graph);
-
     return bestMove;
 }
+
+
 /*
+ * Strategie:
+ *
  * Pour la fonction qui essaie de jouer le mieux posssible, on va essayer toutes les combinaisons d'insertions et de rotations
  * a chaque tour et pour chaque combinaison, on va retenir le Manhattan distance le plus petit entre le tresor, et le point
  * d'expansion courant. On retient les 2 meilleures insertions avec les distances de Manhattan les plus petites.
@@ -685,7 +724,7 @@ t_move minimax (t_labyrinth labyrinth, t_move move, int myTurn, int maxDepth) {
  * Bonus 2: construire le graphe du jeu et essayer de mener le jeu de facon a ce que l'on gagne le plus de fois possibles
  *          Usage de l'algorithme minimax.
  *          Formule empirique:
- *          P = abs(tresorAdversaire - tresorFinalAdversaire)/abs(monTresor - monTresorFinal + 1)
+ *          P = abs(tresorAdversaire - tresorFinalAdversaire)-abs(monTresor - monTresorFinal) + (24 si je gagne/-24 si adversaire gagne/0 sinon)
  *          Plus P est grand, plus on a des chances de gagner
  *
  * Benchmarks:
@@ -693,4 +732,5 @@ t_move minimax (t_labyrinth labyrinth, t_move move, int myTurn, int maxDepth) {
  * - Manhattan Distance + Anti-win algorithm: 75% win rate versus BASIC
  * - Euclidian Distance: 74% win rate versus BASIC
  * - Euclidian Distance + Anti-win algorithm: 74% win rate versus BASIC
+ * - Minimax: Very variable win rate (50-90%)
  */

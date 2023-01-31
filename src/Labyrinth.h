@@ -194,9 +194,40 @@ int isReachableOtherwiseClosest(t_labyrinth labyrinth, t_coordinates source, t_c
  */
 t_move findBestMove(t_labyrinth labyrinth);
 
+/* Function: getWinner
+ * Returns 1 if we win, -1 if opponent wins, 0 otherwise
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ */
+int getWinner (t_labyrinth labyrinth);
+
+/* Function: buildMinimaxGraph
+ * Builds the minimax graph recursively and returns each time the score of the evaluated node
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - maximizingPlayer: whether the current player is the maximizing or the minimizing player
+ * - alpha: variable used for pruning (should be INT_MIN on initial call)
+ * - beta: variable used for pruning (should be INT_MAX on initial call)
+ * - depth: the current depth (should be 0 on initial call)
+ * - maxDepth: the maximum depth to reach before evaluating the node score
+ */
 int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer, int alpha, int beta, int depth, int maxDepth);
 
+/* Function: freeMinimaxGraph
+ * Deep frees the given minimax graph
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - node: the current node we're on (should be the head of the graph on the initial call)
+ */
 void freeMinimaxGraph(t_labyrinth labyrinth, t_node node);
 
+/* Function: minimax
+ * Uses the minimax algorithm to return the best move evaluated
+ * Arguments:
+ * - labyrinth: a labyrinth structure
+ * - move: the latest move
+ * - myTurn: whether it is our turn or the opponent's turn
+ * - maxDepth: the maximum depth to reach before evaluating the node score
+ */
 t_move minimax (t_labyrinth labyrinth, t_move move, int myTurn, int maxDepth);
 #endif

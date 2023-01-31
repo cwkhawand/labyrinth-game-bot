@@ -2,15 +2,15 @@
 #include <stdlib.h>
 #include "lib/Labyrinth/labyrinthAPI.h"
 #include "src/Labyrinth.h"
-#define DEBUG 0
+#define DEBUG 1
 
 int main() {
     t_labyrinth labyrinth;
 
     // Connect to server and obtain game information
-    connectToServer("172.105.76.204", 3456, "DataCell2");
+    connectToServer("172.105.76.204", 3456, "DataCell3");
 
-    int amountOfGames = 10;
+    int amountOfGames = 1;
     int amountOfWins = 0;
     for (int i = 0; i < amountOfGames; i++) {
         //seed=0x2919b9
@@ -64,7 +64,7 @@ int main() {
                            labyrinth.me.item, item.x, item.y);
 
                 if (labyrinth.me.item != labyrinth.me.finishingItem) {
-                    move = minimax(labyrinth, move, my_turn, 4);
+                    move = minimax(labyrinth, move, my_turn, 3);
                 } else {
                     move = findBestMove(labyrinth);
                 }
