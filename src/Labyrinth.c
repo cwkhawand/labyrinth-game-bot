@@ -527,9 +527,24 @@ t_move findBestMove(t_labyrinth labyrinth) {
     return move;
 }
 
-int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer, int depth, int maxDepth) {
+int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer, int alpha, int beta, int depth, int maxDepth) {
+    int endReachedWeight = 0;
+    if ((labyrinth.me.starts && labyrinth.me.item-1 == labyrinth.me.finishingItem) ||
+        (!labyrinth.me.starts && labyrinth.me.item+1 == labyrinth.me.finishingItem)){
+        endReachedWeight = 24;
+    } else if(
+        (labyrinth.opponent.starts && labyrinth.opponent.item-1 == labyrinth.opponent.finishingItem) ||
+        (!labyrinth.opponent.starts && labyrinth.opponent.item+1 == labyrinth.opponent.finishingItem)) {
+        endReachedWeight = -24;
+    }
+
+    if (depth == maxDepth || endReachedWeight != 0) {
+        return endReachedWeight + abs(labyrinth.opponent.item - labyrinth.opponent.finishingItem)-abs(labyrinth.me.item - labyrinth.me.finishingItem);
+    }
+
     if (maximizingPlayer) node->score = INT_MIN;
     else node->score = INT_MAX;
+
 
     node->children = calloc(labyrinth.amountOfPossibleMoves, sizeof(t_node));
 
@@ -544,6 +559,10 @@ int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer
                 t_labyrinth labyrinth_copy;
                 copyLabyrinth(labyrinth, &labyrinth_copy);
 
+                t_player* player;
+                if (maximizingPlayer) player = &labyrinth_copy.me;
+                else player = &labyrinth_copy.opponent;
+
                 move.insert = insert;
                 move.number = number;
                 move.rotation = rotation;
@@ -555,11 +574,7 @@ int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer
 
                 // Consider that both players are playing their best
                 t_coordinates destination;
-                if (maximizingPlayer) {
-                    destination = getItemCoordinates(labyrinth_copy, labyrinth_copy.me.item);
-                } else {
-                    destination = getItemCoordinates(labyrinth_copy, labyrinth_copy.opponent.item);
-                }
+                destination = getItemCoordinates(labyrinth_copy, player->item);
 
                 // If item is ejected, skip the move
                 if (destination.x == -1 && destination.y == -1) {
@@ -567,85 +582,41 @@ int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer
                     continue;
                 }
 
-                t_coordinates source;
-                if (maximizingPlayer) {
-                    source.x = labyrinth_copy.me.x;
-                    source.y = labyrinth_copy.me.y;
-                    source.distance = abs(labyrinth_copy.me.x - destination.x) + abs(labyrinth_copy.me.y - destination.y);
-                } else {
-                    source.x = labyrinth_copy.opponent.x;
-                    source.y = labyrinth_copy.opponent.y;
-                    source.distance = abs(labyrinth_copy.opponent.x - destination.x) + abs(labyrinth_copy.opponent.y - destination.y);
-                }
+                t_coordinates source = {.x = player->x, .y = player->y, .distance = abs(player->x - destination.x) + abs(player->y - destination.y)};
 
                 t_coordinates closestTile = source;
                 if (isReachableOtherwiseClosest(labyrinth_copy, source, destination, source, &closestTile)) {
-                    if (maximizingPlayer) {
-                        if (labyrinth_copy.me.starts)
-                            labyrinth_copy.me.item++;
-                        else
-                            labyrinth_copy.me.item--;
+                    if (player->starts)
+                        player->item++;
+                    else
+                        player->item--;
 
-                        labyrinth_copy.me.x = destination.x;
-                        labyrinth_copy.me.y = destination.y;
-                    } else {
-                        if (labyrinth_copy.opponent.starts)
-                            labyrinth_copy.opponent.item++;
-                        else
-                            labyrinth_copy.opponent.item--;
-
-                        labyrinth_copy.opponent.x = destination.x;
-                        labyrinth_copy.opponent.y = destination.y;
-                    }
+                    player->x = destination.x;
+                    player->y = destination.y;
                 } else {
-                    if (maximizingPlayer) {
-                        labyrinth_copy.me.x = closestTile.x;
-                        labyrinth_copy.me.y = closestTile.y;
-                    } else {
-                        labyrinth_copy.opponent.x = closestTile.x;
-                        labyrinth_copy.opponent.y = closestTile.y;
-                    }
+                    player->x = closestTile.x;
+                    player->y = closestTile.y;
                 }
 
-                if (maximizingPlayer) {
-                    move.x = labyrinth_copy.me.x;
-                    move.y = labyrinth_copy.me.y;
-                } else {
-                    move.x = labyrinth_copy.opponent.x;
-                    move.y = labyrinth_copy.opponent.y;
-                }
+                move.x = player->x;
+                move.y = player->y;
 
-                int endReached = 0;
-                if ((labyrinth_copy.me.starts && labyrinth_copy.me.item-1 == labyrinth_copy.me.finishingItem) ||
-                (!labyrinth_copy.me.starts && labyrinth_copy.me.item+1 == labyrinth_copy.me.finishingItem) ||
-                (labyrinth_copy.opponent.starts && labyrinth_copy.opponent.item-1 == labyrinth_copy.opponent.finishingItem) ||
-                (!labyrinth_copy.opponent.starts && labyrinth_copy.opponent.item+1 == labyrinth_copy.opponent.finishingItem)) {
-                    endReached = 1;
-                }
+                node->children[nodeNumber].head = move;
+                node->children[nodeNumber].initialized = 1;
+                int score = buildMinimaxGraph(labyrinth_copy, &node->children[nodeNumber++], !maximizingPlayer, alpha, beta, depth + 1, maxDepth);
 
-                if (depth != maxDepth && !endReached) {
-                    node->children[nodeNumber].head = move;
-                    node->children[nodeNumber].initialized = 1;
-                    node->score = buildMinimaxGraph(labyrinth_copy, &node->children[nodeNumber++], !maximizingPlayer, depth + 1, maxDepth);
-                } else {
-                    node->children[nodeNumber].head = move;
-                    node->children[nodeNumber].initialized = 1;
-                    node->children[nodeNumber].score = abs(labyrinth_copy.opponent.item - labyrinth_copy.opponent.finishingItem)-abs(labyrinth_copy.me.item - labyrinth_copy.me.finishingItem);
-                    if (endReached) node->children[nodeNumber].score += 24;
-                    nodeNumber++;
-                }
+                if (maximizingPlayer) node->score = MAX(node->score, score);
+                else node->score = MIN(node->score, score);
+
+                if (maximizingPlayer) alpha = MAX(alpha, score);
+                else beta = MIN(beta, score);
 
                 freeLabyrinth(&labyrinth_copy);
+
+                if (beta <= alpha)
+                    return node->score;
             }
         }
-    }
-
-    int index = 0;
-    while (index < labyrinth.amountOfPossibleMoves && node->children[index].initialized) {
-        if (maximizingPlayer) node->score = MAX(node->score, node->children[index].score);
-        else node->score = MIN(node->score, node->children[index].score);
-
-        index++;
     }
 
     return node->score;
@@ -677,7 +648,7 @@ t_move minimax (t_labyrinth labyrinth, t_move move, int myTurn, int maxDepth) {
     t_node graph;
     graph.head = move;
     graph.score = 0;
-    buildMinimaxGraph(labyrinth, &graph, myTurn, 0, maxDepth);
+    buildMinimaxGraph(labyrinth, &graph, myTurn, INT_MIN, INT_MAX, 0, maxDepth);
     //printGraph(graph, 0);
 
     int index = 0;

@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include "lib/Labyrinth/labyrinthAPI.h"
 #include "src/Labyrinth.h"
-#include <unistd.h>
-#define DEBUG 1
+#define DEBUG 0
 
 int main() {
     t_labyrinth labyrinth;
@@ -11,11 +10,11 @@ int main() {
     // Connect to server and obtain game information
     connectToServer("172.105.76.204", 3456, "DataCell2");
 
-    int amountOfGames = 1;
+    int amountOfGames = 10;
     int amountOfWins = 0;
     for (int i = 0; i < amountOfGames; i++) {
         //seed=0x2919b9
-        waitForLabyrinth("TRAINING BASIC timeout=1000 display=debug start=0", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
+        waitForLabyrinth("TRAINING BASIC timeout=10", labyrinth.name, &labyrinth.sizeX, &labyrinth.sizeY);
 
         labyrinth.area = labyrinth.sizeX * labyrinth.sizeY;
 
@@ -64,7 +63,12 @@ int main() {
                     printf("I am at (%d, %d), my item (%d) is at (%d, %d)\n", labyrinth.me.x, labyrinth.me.y,
                            labyrinth.me.item, item.x, item.y);
 
-                move = minimax(labyrinth, move, my_turn, 2);
+                if (labyrinth.me.item != labyrinth.me.finishingItem) {
+                    move = minimax(labyrinth, move, my_turn, 4);
+                } else {
+                    move = findBestMove(labyrinth);
+                }
+
                 if (DEBUG)
                     printf("Move: insert=%d, number=%d, rotation=%d, x=%d, y=%d\n", move.insert, move.number,
                            move.rotation, move.x, move.y);

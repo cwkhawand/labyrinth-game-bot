@@ -194,7 +194,7 @@ int isReachableOtherwiseClosest(t_labyrinth labyrinth, t_coordinates source, t_c
  */
 t_move findBestMove(t_labyrinth labyrinth);
 
-int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer, int depth, int maxDepth);
+int buildMinimaxGraph (t_labyrinth labyrinth, t_node* node, int maximizingPlayer, int alpha, int beta, int depth, int maxDepth);
 
 void freeMinimaxGraph(t_labyrinth labyrinth, t_node node);
 
