@@ -732,5 +732,8 @@ t_move minimax (t_labyrinth labyrinth, t_move move, int myTurn, int maxDepth) {
  * - Manhattan Distance + Anti-win algorithm: 75% win rate versus BASIC
  * - Euclidian Distance: 74% win rate versus BASIC
  * - Euclidian Distance + Anti-win algorithm: 74% win rate versus BASIC
- * - Minimax: Very variable win rate (50-90%)
+ * - Minimax (maxDepth=3): 71% win rate versus BASIC
+ * - Minimax with biased win score (maxDepth=2): 81% win rate versus BASIC
+ * - Minimax with biased win score (maxDepth=3): 77% win rate versus BASIC
+ * - Minimax with biased win score (maxDepth=4): 70% win rate versus BASIC
  */
