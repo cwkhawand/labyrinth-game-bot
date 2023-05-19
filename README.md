@@ -1,5 +1,9 @@
 # Labyrinth-Game
 
+## Introduction
+This project was done as part of the C Language module at Polytech Sorbonne.
+
+## Description
 This program implements 2 different algorithms to play The Amazeing Labyrinth game.
 In a first approach, we use an algorithm that bruteforces all next moves (and the moves after for the opponent) and tries to take the move that is best for us and worse for the opponent.
 This algorithm is fast and produces satisfactory results.
