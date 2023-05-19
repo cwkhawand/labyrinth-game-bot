@@ -18,5 +18,8 @@ We included 2 files, a Makefile as well as a CMakeLists.txt file so you can use 
 You can set debug to 1 to show debugging messages or 0 to just show whether we won or not.
 At the end of the specified amount of runs (variable right before the game's uppermost loop), the program calculates the percentage of wins against the opponent.
 
+## /!\ Note
+Some files are not included, such as external libraries that enable communication with the game server. For those libraries, refer to [thilaire/Labyrinthe-Polytech](https://github.com/thilaire/Labyrinthe-Polytech).
+
 ## License
 This project is licensed under the MPL2.0 License, which allows you to use, modify, and distribute the code freely. See the LICENSE file for more information.
