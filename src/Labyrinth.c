@@ -46,7 +46,7 @@ void printLabyrinthDebug(t_labyrinth labyrinth) {
     }
 }
 
-/* Function: printRawLabyrinthDebug
+/* Function: initLabyrinth
  * Initiates the labyrinth structure
  * Arguments:
  * - labyrinth: a pointer to the labyrinth structure
@@ -97,7 +97,7 @@ void initLabyrinth(t_labyrinth* labyrinth, int* temp_labyrinth, int myTurn) {
 }
 
 /* Function: rotateTile
- * Inserts a tile into the labyrinth
+ * Rotates a given tile
  * Arguments:
  * - tile: the tile to be rotated
  * - rotations: the amount of quarter clockwise rotations to be done (0 to 3)
@@ -264,7 +264,7 @@ void copyLabyrinth(t_labyrinth labyrinth, t_labyrinth* labyrinth_copy) {
     }
 }
 
-/* Function: copyLabyrinth
+/* Function: freeLabyrinth
  * Deep frees a labyrinth from memory
  * Arguments:
  * - labyrinth: a pointer to the labyrinth structure
